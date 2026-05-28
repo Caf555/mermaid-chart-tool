@@ -63,11 +63,7 @@
       transform: rotate(-90deg);
     }
 
-    .ring-bg {
-      fill: none;
-      stroke: var(--card);
-      stroke-width: 10;
-    }
+    .ring-bg { fill: none; stroke: var(--card); stroke-width: 10; }
 
     .ring-progress {
       fill: none;
@@ -76,7 +72,6 @@
       stroke-linecap: round;
       transition: stroke-dashoffset 0.4s ease, stroke 0.3s;
     }
-
     .ring-progress.complete { stroke: var(--warn); }
 
     .display-inner {
@@ -97,12 +92,10 @@
       font-variant-numeric: tabular-nums;
       letter-spacing: -2px;
     }
-
     .count-number.pending {
       color: var(--warn);
       text-shadow: 0 0 30px rgba(255,190,0,.5);
     }
-
     .count-number.complete {
       color: var(--warn);
       text-shadow: 0 0 40px rgba(255,190,0,.8);
@@ -114,19 +107,8 @@
       to   { transform: scale(1.04); }
     }
 
-    .count-label {
-      font-size: 0.85rem;
-      color: var(--muted);
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-    }
-
-    .target-hint {
-      font-size: 0.8rem;
-      color: var(--muted);
-      margin-top: 2px;
-    }
-
+    .count-label { font-size: 0.85rem; color: var(--muted); letter-spacing: 0.15em; text-transform: uppercase; }
+    .target-hint { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
     .target-hint span { color: var(--warn); font-weight: 700; }
 
     /* ── Status bar ── */
@@ -139,41 +121,19 @@
       min-height: 24px;
     }
 
-    .dot {
-      width: 9px; height: 9px;
-      border-radius: 50%;
-      background: var(--muted);
-      flex-shrink: 0;
-    }
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
     .dot.active  { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: blink 1s step-start infinite; }
-    .dot.paused  { background: var(--warn); box-shadow: 0 0 8px var(--warn); }
-    .dot.done    { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+    .dot.paused  { background: var(--warn);   box-shadow: 0 0 8px var(--warn); }
+    .dot.done    { background: var(--danger);  box-shadow: 0 0 8px var(--danger); }
 
     @keyframes blink { 50% { opacity: 0.2; } }
 
     /* ── Volume meter ── */
-    .meter-wrap {
-      width: min(320px, 90vw);
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
+    .meter-wrap { width: min(320px, 90vw); display: flex; flex-direction: column; gap: 6px; }
 
-    .meter-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 0.75rem;
-      color: var(--muted);
-    }
+    .meter-row { display: flex; align-items: center; gap: 10px; font-size: 0.75rem; color: var(--muted); }
 
-    .meter-bar-bg {
-      flex: 1;
-      height: 8px;
-      background: var(--card);
-      border-radius: 4px;
-      overflow: hidden;
-    }
+    .meter-bar-bg { flex: 1; height: 8px; background: var(--card); border-radius: 4px; overflow: hidden; }
 
     .meter-bar {
       height: 100%;
@@ -183,12 +143,7 @@
       transition: width 0.05s;
     }
 
-    .threshold-line-wrap {
-      position: relative;
-      flex: 1;
-    }
-
-    /* ── Sensitivity slider ── */
+    /* ── Settings ── */
     .settings-card {
       width: min(320px, 90vw);
       background: var(--card);
@@ -199,36 +154,16 @@
       gap: 16px;
     }
 
-    .settings-title {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: var(--muted);
-    }
+    .settings-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
 
-    .setting-row {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
+    .setting-row { display: flex; flex-direction: column; gap: 8px; }
 
-    .setting-label {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.9rem;
-    }
-
-    .setting-label span:last-child {
-      color: var(--accent);
-      font-weight: 700;
-      min-width: 36px;
-      text-align: right;
-    }
+    .setting-label { display: flex; justify-content: space-between; font-size: 0.9rem; }
+    .setting-label span:last-child { color: var(--accent); font-weight: 700; min-width: 36px; text-align: right; }
 
     input[type="range"] {
       -webkit-appearance: none;
-      width: 100%;
-      height: 6px;
+      width: 100%; height: 6px;
       border-radius: 3px;
       background: var(--surface);
       outline: none;
@@ -243,18 +178,11 @@
       cursor: pointer;
     }
     input[type="range"]::-moz-range-thumb {
-      width: 20px; height: 20px;
-      border-radius: 50%;
-      background: var(--accent);
-      border: none;
-      cursor: pointer;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: var(--accent); border: none; cursor: pointer;
     }
 
-    .target-input-row {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
+    .target-input-row { display: flex; gap: 10px; align-items: center; }
 
     input[type="number"] {
       background: var(--surface);
@@ -272,17 +200,10 @@
     input[type="number"]::-webkit-inner-spin-button,
     input[type="number"]::-webkit-outer-spin-button { opacity: 1; }
 
-    .target-note {
-      font-size: 0.78rem;
-      color: var(--muted);
-    }
+    .target-note { font-size: 0.78rem; color: var(--muted); }
 
     /* ── Buttons ── */
-    .btn-row {
-      display: flex;
-      gap: 12px;
-      width: min(320px, 90vw);
-    }
+    .btn-row { display: flex; gap: 12px; width: min(320px, 90vw); }
 
     .btn {
       flex: 1;
@@ -299,83 +220,45 @@
     .btn:active { transform: scale(0.95); }
     .btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
 
-    .btn-start {
-      background: var(--accent);
-      color: #0d0f14;
-      box-shadow: 0 0 20px rgba(0,229,160,.35);
-    }
+    .btn-start { background: var(--accent); color: #0d0f14; box-shadow: 0 0 20px rgba(0,229,160,.35); }
     .btn-start:not(:disabled):hover { box-shadow: 0 0 28px rgba(0,229,160,.55); }
 
-    .btn-pause {
-      background: var(--warn);
-      color: #0d0f14;
-      box-shadow: 0 0 20px rgba(255,190,0,.3);
-    }
+    .btn-pause { background: var(--warn); color: #0d0f14; box-shadow: 0 0 20px rgba(255,190,0,.3); }
     .btn-pause:not(:disabled):hover { box-shadow: 0 0 28px rgba(255,190,0,.5); }
 
-    .btn-stop {
-      background: var(--danger);
-      color: #fff;
-      box-shadow: 0 0 20px rgba(255,71,87,.25);
-    }
+    .btn-stop  { background: var(--danger); color: #fff; box-shadow: 0 0 20px rgba(255,71,87,.25); }
     .btn-stop:not(:disabled):hover { box-shadow: 0 0 28px rgba(255,71,87,.45); }
+
+    /* ── Error banner ── */
+    .error-banner {
+      display: none;
+      width: min(320px, 90vw);
+      background: rgba(255,71,87,.15);
+      border: 1px solid rgba(255,71,87,.4);
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 0.85rem;
+      color: #ff8a95;
+      line-height: 1.6;
+      text-align: center;
+    }
+    .error-banner.visible { display: block; }
+    .error-banner a { color: var(--accent2); }
 
     /* ── Flash overlay ── */
     .flash {
-      position: fixed;
-      inset: 0;
+      position: fixed; inset: 0;
       pointer-events: none;
       opacity: 0;
       background: rgba(0,229,160,.12);
       transition: opacity 0.08s;
     }
     .flash.show { opacity: 1; }
-
-    /* ── Permission overlay ── */
-    .perm-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(13,15,20,.92);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 20px;
-      z-index: 100;
-      padding: 24px;
-      text-align: center;
-    }
-    .perm-overlay.hidden { display: none; }
-
-    .perm-icon { font-size: 3rem; }
-    .perm-title { font-size: 1.2rem; font-weight: 700; color: var(--accent); }
-    .perm-desc  { color: var(--muted); font-size: 0.9rem; line-height: 1.6; max-width: 300px; }
-    .perm-btn {
-      background: var(--accent);
-      color: #0d0f14;
-      border: none;
-      border-radius: 12px;
-      padding: 14px 36px;
-      font-size: 1rem;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    .perm-err { color: var(--danger); font-size: 0.85rem; display: none; }
   </style>
 </head>
 <body>
 
-  <!-- Flash feedback on each count -->
   <div class="flash" id="flash"></div>
-
-  <!-- Microphone permission prompt -->
-  <div class="perm-overlay" id="permOverlay">
-    <div class="perm-icon">🎙️</div>
-    <div class="perm-title">需要麥克風權限</div>
-    <div class="perm-desc">本應用使用麥克風聆聽跳繩打地聲音，自動計算跳繩次數。<br>請點擊下方按鈕授予麥克風使用權限。</div>
-    <button class="perm-btn" id="grantBtn">授予麥克風權限</button>
-    <div class="perm-err" id="permErr">無法存取麥克風，請在瀏覽器設定中允許麥克風權限後重新整理。</div>
-  </div>
 
   <h1>🪢 跳繩計數器</h1>
 
@@ -398,7 +281,7 @@
   <!-- Status indicator -->
   <div class="status-bar">
     <div class="dot" id="statusDot"></div>
-    <span id="statusText">待機中</span>
+    <span id="statusText">待機中，按「開始」並允許麥克風</span>
   </div>
 
   <!-- Volume meter -->
@@ -442,11 +325,14 @@
     <button class="btn btn-stop"  id="btnStop"  disabled>結束</button>
   </div>
 
+  <!-- Inline error message (shown only when mic access fails) -->
+  <div class="error-banner" id="errorBanner"></div>
+
 <script>
 (function () {
   'use strict';
 
-  // ── DOM ──────────────────────────────────────────────────────────────
+  // ── DOM refs ─────────────────────────────────────────────────────────
   const countDisplay  = document.getElementById('countDisplay');
   const statusDot     = document.getElementById('statusDot');
   const statusText    = document.getElementById('statusText');
@@ -462,57 +348,60 @@
   const btnStart      = document.getElementById('btnStart');
   const btnPause      = document.getElementById('btnPause');
   const btnStop       = document.getElementById('btnStop');
-  const permOverlay   = document.getElementById('permOverlay');
-  const grantBtn      = document.getElementById('grantBtn');
-  const permErr       = document.getElementById('permErr');
+  const errorBanner   = document.getElementById('errorBanner');
 
-  const RING_CIRC = 2 * Math.PI * 88; // ≈553
+  const RING_CIRC = 2 * Math.PI * 88; // ≈ 553
 
-  // ── State ────────────────────────────────────────────────────────────
-  let audioCtx = null;
-  let analyser = null;
+  // ── Audio state ───────────────────────────────────────────────────────
+  let audioCtx  = null;
+  let analyser  = null;
   let micStream = null;
-  let rafId = null;
+  let rafId     = null;
 
-  let state = 'idle'; // idle | running | paused | done
+  // ── Counter state ─────────────────────────────────────────────────────
+  let state          = 'idle'; // idle | running | paused | done
   let confirmedCount = 0;
-  let hasPending = false;          // one unconfirmed last-hit pending
-  let pendingTimer = null;         // timeout to discard last pending hit
-  let lastHitTime = 0;
-  let peakState = false;           // currently above threshold?
-  let targetReached = false;
+  let hasPending     = false;
+  let pendingTimer   = null;
+  let lastHitTime    = 0;
+  let peakState      = false;
+  let targetReached  = false;
+  let smoothedRMS    = 0;
 
-  const SILENCE_TIMEOUT_MS = 1800; // discard pending hit after this silence
-  const MIN_HIT_INTERVAL_MS = 250; // debounce: min ms between valid hits
-  const SMOOTH = 0.25;             // RMS smoothing factor
-  let smoothedRMS = 0;
+  const SILENCE_MS   = 1800; // ms of silence before discarding last hit
+  const DEBOUNCE_MS  = 250;  // min ms between registered hits
+  const SMOOTH       = 0.25;
 
-  // ── Threshold (from slider, 0‥1) ────────────────────────────────────
-  function getThreshold() {
-    return parseFloat(threshSlider.value) / 100;
+  // ── Helpers ───────────────────────────────────────────────────────────
+  function getThreshold() { return parseFloat(threshSlider.value) / 100; }
+
+  function getDisplayCount() { return confirmedCount + (hasPending ? 1 : 0); }
+
+  function showError(msg) {
+    errorBanner.innerHTML = msg;
+    errorBanner.classList.add('visible');
   }
 
-  // ── Display ──────────────────────────────────────────────────────────
-  function getDisplayCount() {
-    return confirmedCount + (hasPending ? 1 : 0);
+  function clearError() {
+    errorBanner.classList.remove('visible');
   }
 
+  // ── Display ───────────────────────────────────────────────────────────
   function refreshDisplay() {
-    const n = getDisplayCount();
-    countDisplay.textContent = n;
-
+    const n      = getDisplayCount();
     const target = parseInt(targetInput.value, 10) || 0;
-    const isComplete = target > 0 && n >= target;
+    const done   = target > 0 && n >= target;
 
-    countDisplay.classList.toggle('pending', hasPending && !isComplete);
-    countDisplay.classList.toggle('complete', isComplete);
+    countDisplay.textContent = n;
+    countDisplay.classList.toggle('pending',  hasPending && !done);
+    countDisplay.classList.toggle('complete', done);
 
     if (target > 0) {
       targetHint.style.display = '';
       targetDisplay.textContent = target;
       const pct = Math.min(n / target, 1);
       ringProgress.style.strokeDashoffset = RING_CIRC * (1 - pct);
-      ringProgress.classList.toggle('complete', isComplete);
+      ringProgress.classList.toggle('complete', done);
     } else {
       targetHint.style.display = 'none';
       ringProgress.style.strokeDashoffset = RING_CIRC;
@@ -522,80 +411,67 @@
 
   function setStatus(s) {
     statusDot.className = 'dot ' + s;
-    const labels = { idle: '待機中', running: '偵測中…', paused: '已暫停', done: '已結束' };
-    statusText.textContent = labels[s] || s;
+    const MAP = {
+      idle:    '待機中，按「開始」並允許麥克風',
+      running: '偵測中…',
+      paused:  '已暫停',
+      done:    '已結束'
+    };
+    statusText.textContent = MAP[s] || s;
   }
 
   function updateButtons() {
     btnStart.disabled = (state === 'running' || state === 'done');
     btnPause.disabled = (state !== 'running');
-    btnStop.disabled  = (state === 'idle' || state === 'done');
-
+    btnStop.disabled  = (state === 'idle'    || state === 'done');
     btnStart.textContent = state === 'paused' ? '繼續' : '開始';
   }
 
-  // ── Bell sound (Web Audio API synthesis) ────────────────────────────
+  // ── Bell (synthesised) ────────────────────────────────────────────────
   function playBell() {
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const t = ctx.currentTime;
-
-      function tone(freq, gain, decay) {
+      const t   = ctx.currentTime;
+      [[880,.5,2.5],[1760,.3,1.8],[2640,.2,1.2],[1174,.25,2.0]].forEach(([f,g,d]) => {
         const osc = ctx.createOscillator();
         const env = ctx.createGain();
         osc.type = 'sine';
-        osc.frequency.value = freq;
-        env.gain.setValueAtTime(gain, t);
-        env.gain.exponentialRampToValueAtTime(0.001, t + decay);
+        osc.frequency.value = f;
+        env.gain.setValueAtTime(g, t);
+        env.gain.exponentialRampToValueAtTime(0.001, t + d);
         osc.connect(env);
         env.connect(ctx.destination);
         osc.start(t);
-        osc.stop(t + decay);
-      }
-
-      // Bell chord: fundamental + harmonics
-      tone(880,  0.5, 2.5);
-      tone(1760, 0.3, 1.8);
-      tone(2640, 0.2, 1.2);
-      tone(1174, 0.25, 2.0); // add D6
+        osc.stop(t + d);
+      });
       setTimeout(() => ctx.close(), 3500);
-    } catch (e) {
-      console.warn('Bell synthesis failed', e);
-    }
+    } catch(e) {}
   }
 
-  // ── Flash animation ──────────────────────────────────────────────────
   function doFlash() {
     flash.classList.add('show');
     setTimeout(() => flash.classList.remove('show'), 100);
   }
 
-  // ── Pending hit management ───────────────────────────────────────────
-  // A "pending" hit = the most recent detected rope-hit that has NOT yet
-  // been confirmed by a subsequent hit. If silence persists beyond
-  // SILENCE_TIMEOUT_MS the pending hit is discarded ("最後一聲不算").
-
-  function schedulePendingTimeout() {
+  // ── Hit registration ──────────────────────────────────────────────────
+  // Each new hit confirms the previous pending one.
+  // If silence > SILENCE_MS, the last pending hit is discarded.
+  function scheduleSilenceTimeout() {
     clearTimeout(pendingTimer);
     pendingTimer = setTimeout(() => {
       if (state === 'running' && hasPending) {
-        // Still running but rope seems to have stopped — discard last hit
         hasPending = false;
         refreshDisplay();
       }
-    }, SILENCE_TIMEOUT_MS);
+    }, SILENCE_MS);
   }
 
   function registerHit() {
     const now = Date.now();
-    if (now - lastHitTime < MIN_HIT_INTERVAL_MS) return; // debounce
+    if (now - lastHitTime < DEBOUNCE_MS) return;
     lastHitTime = now;
 
-    // Confirm the previously pending hit (if any)
-    if (hasPending) {
-      confirmedCount++;
-    }
-    // New pending hit
+    if (hasPending) confirmedCount++;
     hasPending = true;
 
     const target = parseInt(targetInput.value, 10) || 0;
@@ -606,91 +482,120 @@
 
     doFlash();
     refreshDisplay();
-    schedulePendingTimeout();
+    scheduleSilenceTimeout();
   }
 
-  // ── Audio analysis loop ──────────────────────────────────────────────
-  function analysisLoop() {
-    if (state !== 'running') return;
-
-    const bufferLength = analyser.fftSize;
-    const dataArray = new Float32Array(bufferLength);
-    analyser.getFloatTimeDomainData(dataArray);
-
-    // Compute RMS
-    let sumSq = 0;
-    for (let i = 0; i < bufferLength; i++) sumSq += dataArray[i] * dataArray[i];
-    const rms = Math.sqrt(sumSq / bufferLength);
-
-    // Smooth RMS for display
-    smoothedRMS = smoothedRMS + SMOOTH * (rms - smoothedRMS);
-    const pct = Math.min(smoothedRMS * 400, 100); // scale for display
-    meterBar.style.width = pct + '%';
-    meterVal.textContent = Math.round(pct) + '%';
-
-    // Peak detector: rising edge crosses threshold
-    const thresh = getThreshold();
-    const isAbove = rms > thresh;
-    if (isAbove && !peakState) {
-      // Rising edge — register hit
-      registerHit();
-    }
-    peakState = isAbove;
-
-    rafId = requestAnimationFrame(analysisLoop);
-  }
-
-  // ── Mic setup ────────────────────────────────────────────────────────
-  async function setupAudio() {
-    if (audioCtx) return true; // already set up
-    try {
-      micStream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
-      });
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 1024;
-      analyser.smoothingTimeConstant = 0;
-      const source = audioCtx.createMediaStreamSource(micStream);
-      source.connect(analyser);
-      return true;
-    } catch (e) {
-      console.error('Mic error', e);
-      return false;
-    }
-  }
-
-  // ── Flush pending on pause/stop ──────────────────────────────────────
-  // Per spec: last unconfirmed hit is discarded when counting stops.
   function flushPending() {
     clearTimeout(pendingTimer);
     hasPending = false;
   }
 
-  // ── Button handlers ──────────────────────────────────────────────────
+  // ── Audio analysis loop ───────────────────────────────────────────────
+  function analysisLoop() {
+    if (state !== 'running') return;
+
+    const data = new Float32Array(analyser.fftSize);
+    analyser.getFloatTimeDomainData(data);
+
+    let sumSq = 0;
+    for (let i = 0; i < data.length; i++) sumSq += data[i] * data[i];
+    const rms = Math.sqrt(sumSq / data.length);
+
+    smoothedRMS += SMOOTH * (rms - smoothedRMS);
+    const pct = Math.min(smoothedRMS * 400, 100);
+    meterBar.style.width  = pct + '%';
+    meterVal.textContent  = Math.round(pct) + '%';
+
+    const above = rms > getThreshold();
+    if (above && !peakState) registerHit(); // rising edge
+    peakState = above;
+
+    rafId = requestAnimationFrame(analysisLoop);
+  }
+
+  // ── Mic initialisation ────────────────────────────────────────────────
+  async function setupAudio() {
+    if (audioCtx) return true;
+
+    // Try progressive constraint degradation for maximum compatibility
+    const attempts = [
+      { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } },
+      { audio: true }
+    ];
+
+    let lastErr = null;
+    for (const constraint of attempts) {
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia(constraint);
+        audioCtx  = new (window.AudioContext || window.webkitAudioContext)();
+        analyser  = audioCtx.createAnalyser();
+        analyser.fftSize = 1024;
+        analyser.smoothingTimeConstant = 0;
+        audioCtx.createMediaStreamSource(micStream).connect(analyser);
+        return true;
+      } catch (e) {
+        lastErr = e;
+      }
+    }
+
+    return lastErr; // return Error object on failure
+  }
+
+  // ── Button: 開始 / 繼續 ───────────────────────────────────────────────
   btnStart.addEventListener('click', async () => {
+    clearError();
+
     if (state === 'idle' || state === 'done') {
-      // Reset
       confirmedCount = 0;
-      hasPending = false;
-      peakState = false;
-      smoothedRMS = 0;
-      lastHitTime = 0;
-      targetReached = false;
+      hasPending     = false;
+      peakState      = false;
+      smoothedRMS    = 0;
+      lastHitTime    = 0;
+      targetReached  = false;
       clearTimeout(pendingTimer);
       refreshDisplay();
     }
 
+    // Check browser support first
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      showError(
+        '您的瀏覽器不支援麥克風 API。<br>' +
+        '請改用 <b>Chrome</b> 或 <b>Safari</b>，' +
+        '並確認頁面透過 <b>https://</b> 或 <b>localhost</b> 開啟（不能是 file://）。'
+      );
+      return;
+    }
+
     if (!audioCtx) {
-      // Need to set up audio — show loading state briefly
-      btnStart.disabled = true;
-      btnStart.textContent = '等待中…';
-      const ok = await setupAudio();
-      if (!ok) {
-        permErr.style.display = '';
-        permOverlay.classList.remove('hidden');
-        btnStart.disabled = false;
+      btnStart.disabled    = true;
+      btnStart.textContent = '請求中…';
+      setStatus('idle');
+
+      const result = await setupAudio();
+      if (result !== true) {
+        // Restore button first
+        btnStart.disabled    = false;
         btnStart.textContent = '開始';
+        updateButtons();
+
+        const name = result && result.name;
+        if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+          showError(
+            '麥克風權限被拒絕。<br>' +
+            '請點擊瀏覽器網址列左側的 🔒 或 ⓘ 圖示，<br>' +
+            '將麥克風設為「允許」，然後重新整理頁面再試一次。'
+          );
+        } else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+          showError('找不到麥克風裝置，請確認已連接麥克風。');
+        } else if (location.protocol === 'file:') {
+          showError(
+            '從本機 file:// 開啟時，多數瀏覽器會封鎖麥克風。<br>' +
+            '請將此檔案放到伺服器（或用 VS Code Live Server、<br>' +
+            '<code>python3 -m http.server</code>）再開啟。'
+          );
+        } else {
+          showError('無法啟動麥克風：' + (result && result.message || '未知錯誤') + '。');
+        }
         return;
       }
     }
@@ -701,11 +606,12 @@
     rafId = requestAnimationFrame(analysisLoop);
   });
 
+  // ── Button: 暫停 ──────────────────────────────────────────────────────
   btnPause.addEventListener('click', () => {
     if (state !== 'running') return;
-    state = 'paused';
     cancelAnimationFrame(rafId);
-    flushPending(); // discard last unconfirmed hit
+    flushPending();
+    state = 'paused';
     refreshDisplay();
     setStatus('paused');
     updateButtons();
@@ -713,18 +619,19 @@
     meterVal.textContent = '0%';
   });
 
+  // ── Button: 結束 ──────────────────────────────────────────────────────
   btnStop.addEventListener('click', () => {
     if (state === 'idle') return;
     cancelAnimationFrame(rafId);
-    flushPending(); // discard last unconfirmed hit
+    flushPending();
     state = 'done';
+    peakState   = false;
+    smoothedRMS = 0;
     refreshDisplay();
     setStatus('done');
     updateButtons();
     meterBar.style.width = '0%';
     meterVal.textContent = '0%';
-    peakState = false;
-    smoothedRMS = 0;
   });
 
   // ── Slider ────────────────────────────────────────────────────────────
@@ -732,34 +639,13 @@
     threshLabel.textContent = threshSlider.value + '%';
   });
 
-  // ── Target input ─────────────────────────────────────────────────────
+  // ── Target input ──────────────────────────────────────────────────────
   targetInput.addEventListener('input', () => {
-    targetReached = false; // allow bell again if target changed
+    targetReached = false;
     refreshDisplay();
   });
 
-  // ── Permission overlay ───────────────────────────────────────────────
-  grantBtn.addEventListener('click', async () => {
-    grantBtn.textContent = '請求中…';
-    grantBtn.disabled = true;
-    const ok = await setupAudio();
-    if (ok) {
-      permOverlay.classList.add('hidden');
-    } else {
-      permErr.style.display = '';
-      grantBtn.textContent = '授予麥克風權限';
-      grantBtn.disabled = false;
-    }
-  });
-
-  // Check if browser supports getUserMedia
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    permErr.textContent = '您的瀏覽器不支援麥克風功能，請使用 Chrome 或 Safari。';
-    permErr.style.display = '';
-    grantBtn.disabled = true;
-  }
-
-  // ── Init ─────────────────────────────────────────────────────────────
+  // ── Init ──────────────────────────────────────────────────────────────
   setStatus('idle');
   updateButtons();
   refreshDisplay();
