@@ -2,341 +2,635 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>跳繩計數器</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
     :root {
-      --bg:     #0d0f14;
-      --card:   #1e2230;
-      --accent: #00e5a0;
-      --a2:     #00b8ff;
-      --warn:   #ffbe00;
-      --danger: #ff4757;
-      --text:   #e8eaf0;
-      --muted:  #6b7280;
+      --bg:      #0a0c10;
+      --surface: #13161f;
+      --card:    #1a1e2a;
+      --border:  rgba(255,255,255,.07);
+      --accent:  #00e5a0;
+      --a-dim:   rgba(0,229,160,.15);
+      --a2:      #00b8ff;
+      --warn:    #ffbe00;
+      --w-dim:   rgba(255,190,0,.15);
+      --danger:  #ff4757;
+      --d-dim:   rgba(255,71,87,.15);
+      --text:    #dde1ea;
+      --sub:     #8892a4;
+      --muted:   #454f61;
+      --r: 14px;
     }
+
+    html { height: 100%; }
+
     body {
-      background: var(--bg); color: var(--text);
+      height: 100dvh;
+      height: 100vh; /* fallback */
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      display: flex; flex-direction: column; align-items: center;
-      min-height: 100vh; padding: 20px 16px 52px; gap: 16px;
-    }
-    h1 { font-size: 1.2rem; font-weight: 800; letter-spacing: .1em;
-         color: var(--accent); text-shadow: 0 0 20px rgba(0,229,160,.4); }
+      -webkit-font-smoothing: antialiased;
 
-    /* ── alert ── */
-    #alertBar {
-      display: none; width: min(340px,94vw);
-      background: rgba(255,71,87,.18); border: 1.5px solid rgba(255,71,87,.5);
-      border-radius: 12px; padding: 13px 15px;
-      font-size: .83rem; color: #ff8a95; line-height: 1.65; text-align: center;
+      display: grid;
+      grid-template-rows:
+        44px   /* header   */
+        52px   /* profiles */
+        1fr    /* ring     */
+        50px   /* meter    */
+        74px   /* settings */
+        60px;  /* buttons  */
+      gap: 0;
+      padding:
+        10px
+        16px
+        max(env(safe-area-inset-bottom, 10px), 10px);
+      max-width: 480px;
+      margin: 0 auto;
     }
-    #alertBar.info { background: rgba(0,184,255,.12); border-color: rgba(0,184,255,.4); color: #7dd9ff; }
-    #alertBar code { background: rgba(255,255,255,.1); border-radius: 4px; padding: 1px 5px; font-size: .78rem; }
 
-    /* ── activity profile pills ── */
-    .profile-wrap {
-      width: min(340px,94vw);
-      display: flex; flex-direction: column; gap: 8px;
+    /* ══ FLOATING TOAST (does not affect grid) ══════════════════════════ */
+    #toast {
+      display: none;
+      position: fixed;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(360px, calc(100vw - 24px));
+      background: #1a1e2a;
+      border: 1px solid rgba(255,71,87,.5);
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: .8rem;
+      color: #ff8a95;
+      line-height: 1.6;
+      text-align: center;
+      z-index: 999;
+      box-shadow: 0 8px 32px rgba(0,0,0,.5);
     }
-    .profile-label { font-size: .7rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
-    .profile-row {
-      display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;
+    #toast.info { border-color: rgba(0,229,160,.4); color: var(--accent); }
+    #toast.warn { border-color: rgba(255,190,0,.5); color: var(--warn); }
+    #toast code {
+      background: rgba(255,255,255,.08);
+      border-radius: 4px; padding: 1px 5px; font-size: .76rem;
+    }
+    #toast .close-btn {
+      position: absolute; top: 8px; right: 10px;
+      font-size: .9rem; color: var(--muted); cursor: pointer;
+      background: none; border: none; padding: 0;
+      line-height: 1;
+    }
+
+    /* ══ ROW 1 · HEADER ═══════════════════════════════════════════════ */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2px;
+    }
+    .app-title {
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--sub);
+    }
+    .app-title strong { color: var(--accent); }
+    #freqBadge {
+      font-size: .68rem;
+      padding: 3px 9px;
+      border-radius: 20px;
+      background: var(--a-dim);
+      color: var(--accent);
+      border: 1px solid rgba(0,229,160,.25);
+      letter-spacing: .05em;
+      transition: all .25s;
+    }
+
+    /* ══ ROW 2 · PROFILE PILLS ════════════════════════════════════════ */
+    .profiles {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
       scrollbar-width: none;
+      padding: 2px 2px;
     }
-    .profile-row::-webkit-scrollbar { display: none; }
-    .profile-btn {
+    .profiles::-webkit-scrollbar { display: none; }
+
+    .pill {
       flex-shrink: 0;
-      display: flex; flex-direction: column; align-items: center; gap: 3px;
-      padding: 9px 14px; border-radius: 12px; border: 1.5px solid var(--card);
-      background: var(--card); color: var(--muted); cursor: pointer;
-      font-size: .82rem; font-weight: 600; line-height: 1.2;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      height: 36px;
+      padding: 0 13px;
+      border-radius: 18px;
+      border: 1.5px solid var(--muted);
+      background: transparent;
+      color: var(--sub);
+      font-size: .78rem;
+      font-weight: 600;
+      cursor: pointer;
       transition: border-color .15s, color .15s, background .15s;
       -webkit-tap-highlight-color: transparent;
+      white-space: nowrap;
     }
-    .profile-btn span { font-size: .65rem; font-weight: 400; color: var(--muted); }
-    .profile-btn.active {
-      border-color: var(--accent); color: var(--accent); background: rgba(0,229,160,.08);
+    .pill .icon { font-size: .9rem; }
+    .pill.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--a-dim);
     }
-    .profile-btn.active span { color: rgba(0,229,160,.6); }
 
-    /* ── ring ── */
-    .display-wrap {
-      position: relative; width: min(280px,86vw); aspect-ratio: 1;
-      display: flex; align-items: center; justify-content: center;
+    /* ══ ROW 3 · RING DISPLAY ════════════════════════════════════════ */
+    .ring-area {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 0;       /* critical: allow grid row to shrink */
+      position: relative;
     }
-    .ring-svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
-    .ring-bg       { fill: none; stroke: var(--card); stroke-width: 10; }
-    .ring-progress { fill: none; stroke: var(--accent); stroke-width: 10; stroke-linecap: round;
-                     transition: stroke-dashoffset .4s ease, stroke .3s; }
-    .ring-progress.gold { stroke: var(--warn); }
-    .display-inner { display: flex; flex-direction: column; align-items: center; gap: 4px; z-index: 1; width: 80%; text-align: center; }
+
+    .ring-wrap {
+      /* Fill available height, maintain 1:1 ratio, cap width */
+      height: 100%;
+      aspect-ratio: 1 / 1;
+      max-height: 100%;
+      max-width: min(calc(100dvh - 296px), calc(100vw - 32px));
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ring-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+    .ring-track {
+      fill: none;
+      stroke: var(--card);
+      stroke-width: 9;
+    }
+    .ring-fill {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 9;
+      stroke-linecap: round;
+      transition: stroke-dashoffset .45s cubic-bezier(.4,0,.2,1), stroke .3s;
+      filter: drop-shadow(0 0 6px rgba(0,229,160,.35));
+    }
+    .ring-fill.gold {
+      stroke: var(--warn);
+      filter: drop-shadow(0 0 8px rgba(255,190,0,.5));
+    }
+
+    .ring-inner {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
     #countNum {
-      font-size: clamp(64px,19vw,108px); font-weight: 900; line-height: 1;
-      color: var(--accent); text-shadow: 0 0 28px rgba(0,229,160,.45);
-      font-variant-numeric: tabular-nums; transition: color .2s, text-shadow .2s;
+      font-size: clamp(56px, 11dvh, 130px);
+      font-weight: 900;
+      line-height: .95;
+      color: var(--accent);
+      text-shadow: 0 0 40px rgba(0,229,160,.4);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -.02em;
+      transition: color .2s, text-shadow .2s;
     }
-    #countNum.pending  { color: var(--warn); text-shadow: 0 0 28px rgba(255,190,0,.5); }
-    #countNum.complete { color: var(--warn); text-shadow: 0 0 36px rgba(255,190,0,.8); animation: pulse .6s ease infinite alternate; }
-    @keyframes pulse { to { transform: scale(1.05); } }
-    #centreMsg { display: none; font-size: .78rem; color: #ff8a95; line-height: 1.6; padding: 0 8px; }
-    #centreMsg.info { color: #7dd9ff; }
-    .count-label { font-size: .78rem; color: var(--muted); letter-spacing: .14em; text-transform: uppercase; }
-    #targetHint { font-size: .76rem; color: var(--muted); margin-top: 2px; display: none; }
-    #targetHint span { color: var(--warn); font-weight: 700; }
+    #countNum.pending  {
+      color: var(--warn);
+      text-shadow: 0 0 40px rgba(255,190,0,.4);
+    }
+    #countNum.complete {
+      color: var(--warn);
+      text-shadow: 0 0 50px rgba(255,190,0,.7);
+      animation: pulse .55s ease infinite alternate;
+    }
+    @keyframes pulse { to { transform: scale(1.04); } }
 
-    /* ── status ── */
-    #statusRow { display: flex; align-items: center; gap: 8px; font-size: .83rem; color: var(--muted); min-height: 20px; }
-    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
-    .dot.on   { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: blink 1s step-start infinite; }
-    .dot.hold { background: var(--warn);   box-shadow: 0 0 8px var(--warn); }
-    .dot.off  { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
-    @keyframes blink { 50% { opacity: .2; } }
+    #centreMsg {
+      display: none;
+      font-size: .78rem;
+      color: var(--sub);
+      line-height: 1.55;
+      text-align: center;
+      padding: 0 8px;
+    }
+    #centreMsg.hi { color: var(--accent); }
 
-    /* ── meter ── */
-    .meter-block { display: flex; flex-direction: column; gap: 5px; width: min(300px,88vw); }
-    .meter-row   { display: flex; align-items: center; gap: 10px; font-size: .74rem; color: var(--muted); }
-    .bar-bg      { flex: 1; height: 9px; background: var(--card); border-radius: 5px; overflow: hidden; position: relative; }
-    #meterBar    { height: 100%; width: 0%; border-radius: 5px;
-                   background: linear-gradient(90deg, var(--a2), var(--accent)); transition: width .04s; }
-    #threshMark  { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--warn);
-                   border-radius: 1px; transition: left .15s; left: 40%; }
-    .cal-row     { display: flex; justify-content: space-between; font-size: .7rem; color: var(--muted); }
-    .cal-row span { transition: color .25s; }
-    .cal-row .hi  { color: var(--accent); font-weight: 700; }
+    .count-lbl {
+      font-size: .6rem;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+    #targetHint {
+      font-size: .68rem;
+      color: var(--muted);
+      display: none;
+    }
+    #targetHint b { color: var(--warn); font-weight: 700; }
 
-    /* ── settings ── */
-    .card { width: min(300px,88vw); background: var(--card); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
-    .card-title { font-size: .7rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
-    .row    { display: flex; flex-direction: column; gap: 7px; }
-    .row-hd { display: flex; justify-content: space-between; font-size: .88rem; }
-    .row-hd em { color: var(--accent); font-style: normal; font-weight: 700; }
-    .row-sub { font-size: .7rem; color: var(--muted); line-height: 1.5; }
+    /* ══ ROW 4 · STATUS + METER ══════════════════════════════════════ */
+    .meter-section {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 0 2px;
+    }
+
+    #statusRow {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+    .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--muted);
+      flex-shrink: 0;
+    }
+    .dot.on   { background: var(--accent); box-shadow: 0 0 7px var(--accent); animation: blink 1s step-start infinite; }
+    .dot.hold { background: var(--warn);   box-shadow: 0 0 7px var(--warn); }
+    .dot.off  { background: var(--danger); box-shadow: 0 0 7px var(--danger); }
+    @keyframes blink { 50% { opacity: .15; } }
+    #statusTxt { font-size: .72rem; color: var(--sub); }
+
+    .bar-bg {
+      height: 6px;
+      background: var(--card);
+      border-radius: 3px;
+      overflow: hidden;
+      position: relative;
+    }
+    #meterFill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--a2) 0%, var(--accent) 100%);
+      border-radius: 3px;
+      transition: width .04s;
+    }
+    #threshLine {
+      position: absolute;
+      top: 0; bottom: 0;
+      width: 2px;
+      background: var(--warn);
+      border-radius: 1px;
+      left: 40%;
+      transition: left .12s;
+    }
+    #meterPct { font-size: .68rem; color: var(--muted); min-width: 26px; text-align: right; }
+
+    /* ══ ROW 5 · SETTINGS ════════════════════════════════════════════ */
+    .settings {
+      display: grid;
+      grid-template-columns: 1fr 1px 1fr;
+      align-items: center;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 0 16px;
+      gap: 0;
+    }
+
+    .settings-divider {
+      background: var(--border);
+      height: 40px;
+      width: 1px;
+    }
+
+    .setting-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      padding: 12px 0;
+    }
+    .setting-panel:first-child { padding-right: 12px; }
+    .setting-panel:last-child  { padding-left: 12px; }
+
+    .s-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    .s-name {
+      font-size: .67rem;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--muted);
+    }
+    .s-val {
+      font-size: .78rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
     input[type=range] {
-      -webkit-appearance: none; width: 100%; height: 6px;
-      background: #0d0f14; border-radius: 3px; outline: none; cursor: pointer;
+      -webkit-appearance: none;
+      width: 100%; height: 4px;
+      background: var(--surface);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
     }
     input[type=range]::-webkit-slider-thumb {
-      -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%;
-      background: var(--accent); box-shadow: 0 0 8px rgba(0,229,160,.5); cursor: pointer;
+      -webkit-appearance: none;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 6px rgba(0,229,160,.6);
+      cursor: pointer;
     }
     input[type=range]::-moz-range-thumb {
-      width: 20px; height: 20px; border-radius: 50%; background: var(--accent); border: none; cursor: pointer;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: var(--accent); border: none; cursor: pointer;
     }
-    .target-row { display: flex; align-items: center; gap: 10px; }
+
+    .target-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
     input[type=number] {
-      background: #0d0f14; border: 1.5px solid var(--muted); border-radius: 8px;
-      color: var(--text); font-size: 1rem; padding: 8px 12px; width: 110px;
-      outline: none; text-align: center; transition: border-color .2s;
+      flex: 1;
+      min-width: 0;
+      background: var(--surface);
+      border: 1px solid var(--muted);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: .9rem;
+      font-weight: 600;
+      padding: 6px 8px;
+      outline: none;
+      text-align: center;
+      transition: border-color .2s;
     }
     input[type=number]:focus { border-color: var(--accent); }
     input[type=number]::-webkit-inner-spin-button,
     input[type=number]::-webkit-outer-spin-button { opacity: 1; }
-    .note { font-size: .76rem; color: var(--muted); }
+    .s-unit { font-size: .65rem; color: var(--muted); white-space: nowrap; }
 
-    /* ── buttons ── */
-    .btn-row { display: flex; gap: 12px; width: min(300px,88vw); }
+    /* ══ ROW 6 · CONTROL BUTTONS ════════════════════════════════════ */
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
     .btn {
-      flex: 1; padding: 16px 4px; border: none; border-radius: 14px;
-      font-size: 1rem; font-weight: 700; cursor: pointer;
-      transition: transform .12s, opacity .2s;
+      height: 52px;
+      border: none;
+      border-radius: var(--r);
+      font-size: .92rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: .04em;
+      transition: transform .1s, opacity .2s, box-shadow .2s;
       -webkit-tap-highlight-color: transparent;
     }
-    .btn:active  { transform: scale(.95); }
-    .btn:disabled { opacity: .3; cursor: not-allowed; transform: none; }
-    .btn-go   { background: var(--accent); color: #0d0f14; }
-    .btn-hold { background: var(--warn);   color: #0d0f14; }
-    .btn-end  { background: var(--danger); color: #fff; }
+    .btn:active  { transform: scale(.94); }
+    .btn:disabled { opacity: .28; cursor: not-allowed; transform: none !important; }
 
-    /* ── flash ── */
-    #flash { position: fixed; inset: 0; pointer-events: none; opacity: 0;
-             background: rgba(0,229,160,.12); transition: opacity .08s; }
+    .btn-go {
+      background: var(--accent);
+      color: #07120e;
+      box-shadow: 0 4px 18px rgba(0,229,160,.3);
+    }
+    .btn-go:not(:disabled):hover { box-shadow: 0 4px 24px rgba(0,229,160,.5); }
+
+    .btn-hold {
+      background: var(--card);
+      color: var(--warn);
+      border: 1.5px solid rgba(255,190,0,.35);
+    }
+    .btn-hold:not(:disabled):hover { background: var(--w-dim); }
+
+    .btn-end {
+      background: var(--card);
+      color: var(--danger);
+      border: 1.5px solid rgba(255,71,87,.3);
+    }
+    .btn-end:not(:disabled):hover { background: var(--d-dim); }
+
+    /* ══ FULL-SCREEN FLASH ══════════════════════════════════════════ */
+    #flash {
+      position: fixed; inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      background: rgba(0,229,160,.09);
+      transition: opacity .07s;
+    }
     #flash.on { opacity: 1; }
   </style>
 </head>
 <body>
 
+<!-- flash overlay -->
 <div id="flash"></div>
-<h1>🪢 跳繩計數器</h1>
-<div id="alertBar"></div>
 
-<!-- ── Activity profile selector ── -->
-<div class="profile-wrap">
-  <div class="profile-label">活動類型（頻率過濾）</div>
-  <div class="profile-row" id="profileRow"></div>
+<!-- floating toast (fixed, outside grid flow) -->
+<div id="toast">
+  <button class="close-btn" id="toastClose">✕</button>
+  <span id="toastMsg"></span>
 </div>
 
-<!-- ── Counter ring ── -->
-<div class="display-wrap">
-  <svg class="ring-svg" viewBox="0 0 200 200">
-    <circle class="ring-bg" cx="100" cy="100" r="88"/>
-    <circle class="ring-progress" cx="100" cy="100" r="88" id="ring" stroke-dasharray="553" stroke-dashoffset="553"/>
-  </svg>
-  <div class="display-inner">
-    <div id="countNum">0</div>
-    <div id="centreMsg"></div>
-    <div class="count-label">次數</div>
-    <div id="targetHint">目標：<span id="targetNum">0</span> 次</div>
-  </div>
-</div>
+<!-- ── Row 1: Header ─────────────────────────────────────── -->
+<header>
+  <div class="app-title"><strong>跳繩</strong> 計數器</div>
+  <div id="freqBadge">60–350 Hz</div>
+</header>
 
-<div id="statusRow"><div class="dot" id="dot"></div><span id="statusTxt">待機中</span></div>
+<!-- ── Row 2: Activity profiles ──────────────────────────── -->
+<div class="profiles" id="profileRow"></div>
 
-<!-- ── Volume meter ── -->
-<div class="meter-block">
-  <div class="meter-row">
-    <span>帶內音量</span>
-    <div class="bar-bg">
-      <div id="meterBar"></div>
-      <div id="threshMark"></div>
+<!-- ── Row 3: Ring display ───────────────────────────────── -->
+<div class="ring-area">
+  <div class="ring-wrap">
+    <svg class="ring-svg" viewBox="0 0 200 200">
+      <circle class="ring-track" cx="100" cy="100" r="88"/>
+      <circle class="ring-fill" cx="100" cy="100" r="88" id="ringFill"
+              stroke-dasharray="553" stroke-dashoffset="553"/>
+    </svg>
+    <div class="ring-inner">
+      <div id="countNum">0</div>
+      <div id="centreMsg"></div>
+      <div class="count-lbl">次數</div>
+      <div id="targetHint">目標 <b id="targetNum">0</b></div>
     </div>
-    <span id="meterPct">0%</span>
-  </div>
-  <div class="cal-row">
-    <span id="calBg">背景：–</span>
-    <span id="calTrig">觸發線：–</span>
-    <span id="calPeak">峰值：–</span>
   </div>
 </div>
 
-<!-- ── Settings ── -->
-<div class="card">
-  <div class="card-title">設定</div>
-  <div class="row">
-    <div class="row-hd">
-      <span>靈敏度（觸發倍率）</span>
-      <em id="multVal">2.5×</em>
+<!-- ── Row 4: Status + meter ──────────────────────────────── -->
+<div class="meter-section">
+  <div id="statusRow">
+    <div class="dot" id="dot"></div>
+    <span id="statusTxt">待機</span>
+  </div>
+  <div class="bar-bg">
+    <div id="meterFill"></div>
+    <div id="threshLine"></div>
+  </div>
+  <span id="meterPct">–</span>
+</div>
+
+<!-- ── Row 5: Settings ────────────────────────────────────── -->
+<div class="settings">
+  <!-- Sensitivity -->
+  <div class="setting-panel">
+    <div class="s-label">
+      <span class="s-name">靈敏度</span>
+      <span class="s-val" id="multVal">2.5×</span>
     </div>
     <input type="range" id="multSlider" min="1.5" max="8" value="2.5" step="0.5">
-    <div class="row-sub">倍率越小越靈敏。音量計的黃線即觸發門檻，調整使黃線落在峰值之內。</div>
   </div>
-  <div class="row">
-    <div class="row-hd"><span>目標次數</span></div>
-    <div class="target-row">
-      <input type="number" id="targetIn" min="0" max="9999" value="0" placeholder="0 = 不限">
-      <span class="note">0 = 不限制</span>
+
+  <div class="settings-divider"></div>
+
+  <!-- Target -->
+  <div class="setting-panel">
+    <div class="s-label">
+      <span class="s-name">目標次數</span>
+    </div>
+    <div class="target-input-wrap">
+      <input type="number" id="targetIn" min="0" max="9999" value="0" placeholder="∞">
+      <span class="s-unit">次<br>0=∞</span>
     </div>
   </div>
 </div>
 
-<!-- ── Control buttons ── -->
-<div class="btn-row">
+<!-- ── Row 6: Buttons ─────────────────────────────────────── -->
+<div class="controls">
   <button class="btn btn-go"   id="btnGo">開始</button>
   <button class="btn btn-hold" id="btnHold" disabled>暫停</button>
   <button class="btn btn-end"  id="btnEnd"  disabled>結束</button>
 </div>
 
 <script>
-/* ═══════════════════════════════════════════════════════
-   Activity profiles
-   Each profile defines a bandpass range (low–high Hz).
-   Audio is passed through HPF → LPF before the analyser,
-   so only energy in that band drives the hit detector.
-   Breathing sits mostly in 200–2000 Hz; jump-rope thuds
-   are concentrated in 60–350 Hz — filtering eliminates
-   most breath noise from the detection signal.
-═══════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   Activity profiles — BiquadFilter HPF+LPF chain
+   Each profile targets the dominant frequency of its impact sound.
+   Breathing concentrates in 200–2000 Hz; jump rope thuds peak at
+   60–350 Hz, so band-limiting to that range rejects breath noise.
+═══════════════════════════════════════════════════════════════ */
 var PROFILES = [
-  { id:'jumprope', icon:'🪢', label:'跳繩',    low:60,   high:350,  desc:'60–350 Hz｜繩子打地衝擊，過濾喘氣聲' },
-  { id:'running',  icon:'🏃', label:'跑步',    low:40,   high:200,  desc:'40–200 Hz｜腳步衝擊低頻' },
-  { id:'jumping',  icon:'⬆️', label:'跳躍',    low:50,   high:320,  desc:'50–320 Hz｜落地衝擊低頻' },
-  { id:'clapping', icon:'👏', label:'拍手',    low:700,  high:5000, desc:'700–5000 Hz｜拍手高頻，過濾腳步與喘氣' },
-  { id:'situp',    icon:'💪', label:'仰臥起坐', low:30,   high:180,  desc:'30–180 Hz｜背部著墊極低頻' },
-  { id:'wide',     icon:'🔊', label:'通用',    low:20,   high:18000,desc:'20–18000 Hz｜寬頻，不做頻率過濾' },
+  { id:'jumprope', icon:'🪢', label:'跳繩',    low:60,   high:350,  hz:'60–350Hz' },
+  { id:'running',  icon:'🏃', label:'跑步',    low:40,   high:200,  hz:'40–200Hz' },
+  { id:'jumping',  icon:'⬆️', label:'跳躍',    low:50,   high:320,  hz:'50–320Hz' },
+  { id:'clapping', icon:'👏', label:'拍手',    low:700,  high:5000, hz:'700–5kHz' },
+  { id:'situp',    icon:'💪', label:'仰臥起坐', low:30,   high:180,  hz:'30–180Hz' },
+  { id:'wide',     icon:'🔊', label:'通用',    low:20,   high:18000,hz:'全頻' },
 ];
 var activeProfile = PROFILES[0];
 
-/* ── Build profile pill buttons ── */
+/* Build profile pills */
 var profileRow = document.getElementById('profileRow');
 PROFILES.forEach(function(p) {
   var btn = document.createElement('button');
-  btn.className = 'profile-btn' + (p.id === activeProfile.id ? ' active' : '');
-  btn.innerHTML = p.icon + ' ' + p.label + '<span>' +
-    (p.low < 100 ? p.low : p.low >= 1000 ? (p.low/1000).toFixed(1)+'k' : p.low) + '–' +
-    (p.high >= 1000 ? (p.high/1000).toFixed(0)+'kHz' : p.high+'Hz') + '</span>';
+  btn.className = 'pill' + (p.id === activeProfile.id ? ' active' : '');
+  btn.innerHTML = '<span class="icon">' + p.icon + '</span>' + p.label;
   btn.addEventListener('click', function() {
     if (activeProfile.id === p.id) return;
     activeProfile = p;
-    document.querySelectorAll('.profile-btn').forEach(function(b){ b.classList.remove('active'); });
+    document.querySelectorAll('.pill').forEach(function(b){ b.classList.remove('active'); });
     btn.classList.add('active');
-    applyProfileToFilters();
-    /* reset background estimate when band changes */
+    document.getElementById('freqBadge').textContent = p.hz;
+    applyFilters();
     bgRMS = 0.02; peakRMS = 0;
-    showAlert('已切換：' + p.icon + ' ' + p.label + '　' + p.desc, 'info');
-    setTimeout(function(){ if(elAlert.className==='info') hideAlert(); }, 3000);
+    showToast(p.icon + ' ' + p.label + '　' + p.hz, 'info', 2200);
   });
   profileRow.appendChild(btn);
 });
 
-/* ══════════════════════════════════════════════════════ */
-
-var audioCtx, analyser, hpFilter, lpFilter, rafId;
+/* ── Audio state ───────────────────────────────────────────── */
+var audioCtx, analyser, hpf, lpf, rafId;
 var state = 'idle';
 var confirmed = 0, hasPending = false, pendingTimer = null;
 var lastHit = 0, aboveThresh = false, targetDone = false;
+var rawRMS = 0, dispRMS = 0, bgRMS = 0.02, peakRMS = 0;
 
-var rawRMS  = 0;
-var dispRMS = 0;
-var bgRMS   = 0.02;
-var peakRMS = 0;
+var BG_UP = 0.04, BG_DOWN = 0.01, DISP_A = 0.35;
+var ABS_FLOOR = 0.003, SILENCE = 1800, DEBOUNCE = 260, CIRC = 553;
 
-var BG_UP    = 0.04;
-var BG_DOWN  = 0.01;
-var DISP_A   = 0.35;
-var ABS_FLOOR= 0.003;
-var SILENCE  = 1800;
-var DEBOUNCE = 260;
-var CIRC     = 553;
-
-/* DOM */
+/* ── DOM ────────────────────────────────────────────────────── */
 var elNum     = document.getElementById('countNum');
 var elCentre  = document.getElementById('centreMsg');
 var elDot     = document.getElementById('dot');
 var elStatus  = document.getElementById('statusTxt');
-var elMeter   = document.getElementById('meterBar');
+var elMeter   = document.getElementById('meterFill');
 var elMeterPc = document.getElementById('meterPct');
-var elThMark  = document.getElementById('threshMark');
-var elCalBg   = document.getElementById('calBg');
-var elCalTrig = document.getElementById('calTrig');
-var elCalPeak = document.getElementById('calPeak');
+var elThLine  = document.getElementById('threshLine');
 var elMultSl  = document.getElementById('multSlider');
 var elMultVal = document.getElementById('multVal');
 var elTarget  = document.getElementById('targetIn');
 var elTargetH = document.getElementById('targetHint');
 var elTargetN = document.getElementById('targetNum');
-var elRing    = document.getElementById('ring');
+var elRing    = document.getElementById('ringFill');
 var elFlash   = document.getElementById('flash');
-var elAlert   = document.getElementById('alertBar');
+var elToast   = document.getElementById('toast');
+var elToastMsg= document.getElementById('toastMsg');
+var elFreqBdg = document.getElementById('freqBadge');
 var btnGo     = document.getElementById('btnGo');
 var btnHold   = document.getElementById('btnHold');
 var btnEnd    = document.getElementById('btnEnd');
+var toastTimer;
 
-/* ── helpers ── */
-function showAlert(html, type) {
-  elAlert.innerHTML = html; elAlert.className = type === 'info' ? 'info' : '';
-  elAlert.style.display = 'block';
+/* ── Toast ─────────────────────────────────────────────────── */
+function showToast(msg, type, ms) {
+  elToastMsg.innerHTML = msg;
+  elToast.className = type || '';
+  elToast.style.display = 'block';
+  clearTimeout(toastTimer);
+  if (ms) toastTimer = setTimeout(hideToast, ms);
 }
-function hideAlert() { elAlert.style.display = 'none'; }
-function showCentre(html, type) {
+function hideToast() { elToast.style.display = 'none'; }
+document.getElementById('toastClose').addEventListener('click', hideToast);
+
+/* ── Centre message inside ring ─────────────────────────────── */
+function showCentre(html, cls) {
   elNum.style.display = 'none';
-  elCentre.innerHTML = html; elCentre.className = type === 'info' ? 'info' : '';
+  elCentre.innerHTML = html; elCentre.className = cls || '';
   elCentre.style.display = 'block';
 }
-function hideCentre() { elCentre.style.display = 'none'; elNum.style.display = ''; }
+function hideCentre() {
+  elCentre.style.display = 'none'; elNum.style.display = '';
+}
 
+/* ── Status dot ─────────────────────────────────────────────── */
 function setStatus(s) {
   var cls = { idle:'', running:'on', paused:'hold', done:'off' };
   elDot.className = 'dot ' + (cls[s] || '');
-  var lbl = { idle:'待機中', running:'偵測中…', paused:'已暫停', done:'已結束' };
+  var lbl = { idle:'待機', running:'偵測中', paused:'暫停', done:'完成' };
   elStatus.textContent = lbl[s] || s;
 }
+
+/* ── Button sync ────────────────────────────────────────────── */
 function syncBtns() {
   btnGo.disabled   = (state === 'running' || state === 'done');
   btnHold.disabled = (state !== 'running');
   btnEnd.disabled  = (state === 'idle' || state === 'done');
   btnGo.textContent = state === 'paused' ? '繼續' : '開始';
 }
+
+/* ── Ring + count display ───────────────────────────────────── */
 function display() {
   var n   = confirmed + (hasPending ? 1 : 0);
   var tgt = parseInt(elTarget.value, 10) || 0;
@@ -346,40 +640,48 @@ function display() {
   if (tgt > 0) {
     elTargetH.style.display = ''; elTargetN.textContent = tgt;
     elRing.style.strokeDashoffset = CIRC * (1 - Math.min(n / tgt, 1));
-    elRing.className = 'ring-progress' + (done ? ' gold' : '');
+    elRing.className = 'ring-fill' + (done ? ' gold' : '');
   } else {
     elTargetH.style.display = 'none';
-    elRing.style.strokeDashoffset = CIRC; elRing.className = 'ring-progress';
+    elRing.style.strokeDashoffset = CIRC;
+    elRing.className = 'ring-fill';
   }
 }
 
-/* ── bell ── */
+/* ── Bell ────────────────────────────────────────────────────── */
 function bell() {
   try {
     var c = new (window.AudioContext || window.webkitAudioContext)();
     var t = c.currentTime;
-    [[880,.5,2.5],[1760,.3,1.8],[2640,.2,1.2],[1174,.25,2]].forEach(function(x) {
+    [[880,.5,2.5],[1760,.3,1.8],[2640,.2,1.2],[1174,.25,2]].forEach(function(x){
       var o = c.createOscillator(), g = c.createGain();
       o.type = 'sine'; o.frequency.value = x[0];
       g.gain.setValueAtTime(x[1], t);
-      g.gain.exponentialRampToValueAtTime(.001, t + x[2]);
+      g.gain.exponentialRampToValueAtTime(.001, t+x[2]);
       o.connect(g); g.connect(c.destination);
-      o.start(t); o.stop(t + x[2]);
+      o.start(t); o.stop(t+x[2]);
     });
     setTimeout(function(){ c.close(); }, 3500);
   } catch(e) {}
 }
-function doFlash() { elFlash.className = 'on'; setTimeout(function(){ elFlash.className = ''; }, 100); }
 
-/* ── hit logic ── */
+/* ── Flash ────────────────────────────────────────────────────── */
+function doFlash() {
+  elFlash.className = 'on';
+  setTimeout(function(){ elFlash.className = ''; }, 90);
+}
+
+/* ── Pending hit logic ──────────────────────────────────────── */
 function clearPending() { clearTimeout(pendingTimer); hasPending = false; }
+
 function schedSilence() {
   clearTimeout(pendingTimer);
   pendingTimer = setTimeout(function() {
     if (state === 'running' && hasPending) { hasPending = false; display(); }
   }, SILENCE);
 }
-function hit() {
+
+function registerHit() {
   var now = Date.now();
   if (now - lastHit < DEBOUNCE) return;
   lastHit = now;
@@ -390,94 +692,73 @@ function hit() {
   doFlash(); display(); schedSilence();
 }
 
-/* ── meter ── */
+/* ── Meter update ─────────────────────────────────────────── */
 function updateMeter(dynThresh) {
-  var scale  = 0.4 / Math.max(dynThresh, ABS_FLOOR);
-  var pct    = Math.min(dispRMS   * scale * 100, 100);
-  var thPct  = Math.min(dynThresh * scale * 100, 100);
-  elMeter.style.width   = pct  + '%';
+  var scale = 0.4 / Math.max(dynThresh, ABS_FLOOR);
+  var pct   = Math.min(dispRMS   * scale * 100, 100);
+  var thPct = Math.min(dynThresh * scale * 100, 100);
+  elMeter.style.width   = pct + '%';
   elMeterPc.textContent = Math.round(pct) + '%';
-  elThMark.style.left   = thPct + '%';
-  if (rawRMS > peakRMS) peakRMS = rawRMS;
-  else peakRMS *= 0.995;
-  function fmt(v) { return (v * 1000).toFixed(1) + 'm'; }
-  elCalBg.textContent   = '背景：'  + fmt(bgRMS);
-  elCalTrig.textContent = '觸發線：' + fmt(dynThresh);
-  elCalPeak.textContent = '峰值：'  + fmt(peakRMS);
-  elCalTrig.className   = (peakRMS > dynThresh) ? 'hi' : '';
+  elThLine.style.left   = thPct + '%';
 }
 
-/* ── analysis loop ── */
+/* ── Detection loop ─────────────────────────────────────────── */
 function loop() {
   if (state !== 'running') return;
   var buf = new Float32Array(analyser.fftSize);
   analyser.getFloatTimeDomainData(buf);
-  var sumSq = 0;
-  for (var i = 0; i < buf.length; i++) sumSq += buf[i] * buf[i];
-  rawRMS = Math.sqrt(sumSq / buf.length);
+  var sq = 0;
+  for (var i = 0; i < buf.length; i++) sq += buf[i] * buf[i];
+  rawRMS = Math.sqrt(sq / buf.length);
   dispRMS += DISP_A * (rawRMS - dispRMS);
   if (!aboveThresh) {
-    if (rawRMS > bgRMS) bgRMS += BG_UP   * (rawRMS - bgRMS);
-    else                 bgRMS += BG_DOWN * (rawRMS - bgRMS);
+    bgRMS += (rawRMS > bgRMS ? BG_UP : BG_DOWN) * (rawRMS - bgRMS);
   }
   var mult = parseFloat(elMultSl.value);
   var dynThresh = Math.max(bgRMS * mult, ABS_FLOOR);
   var above = rawRMS > dynThresh;
-  if (above && !aboveThresh) hit();
+  if (above && !aboveThresh) registerHit();
   aboveThresh = above;
   updateMeter(dynThresh);
   rafId = requestAnimationFrame(loop);
 }
 
-/* ── filter application ── */
-function applyProfileToFilters() {
-  if (!hpFilter || !lpFilter) return;
-  /* clamp to Nyquist (will be resolved after audioCtx is created, but safe to set early) */
-  hpFilter.frequency.value = activeProfile.low;
-  lpFilter.frequency.value = activeProfile.high;
+/* ── Filter setup ───────────────────────────────────────────── */
+function applyFilters() {
+  if (!hpf || !lpf) return;
+  hpf.frequency.value = activeProfile.low;
+  lpf.frequency.value = activeProfile.high;
 }
 
-/* ── graph setup ── */
 function buildGraph(stream) {
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  var source = audioCtx.createMediaStreamSource(stream);
-
-  /* bandpass via HPF + LPF chain */
-  hpFilter = audioCtx.createBiquadFilter();
-  hpFilter.type    = 'highpass';
-  hpFilter.Q.value = 0.9;
-
-  lpFilter = audioCtx.createBiquadFilter();
-  lpFilter.type    = 'lowpass';
-  lpFilter.Q.value = 0.9;
-
-  applyProfileToFilters();
-
+  var src = audioCtx.createMediaStreamSource(stream);
+  hpf = audioCtx.createBiquadFilter();
+  hpf.type = 'highpass'; hpf.Q.value = 0.9;
+  lpf = audioCtx.createBiquadFilter();
+  lpf.type = 'lowpass';  lpf.Q.value = 0.9;
+  applyFilters();
   analyser = audioCtx.createAnalyser();
   analyser.fftSize = 2048;
   analyser.smoothingTimeConstant = 0;
-
-  source.connect(hpFilter);
-  hpFilter.connect(lpFilter);
-  lpFilter.connect(analyser);
+  src.connect(hpf); hpf.connect(lpf); lpf.connect(analyser);
 }
 
-/* ── mic setup ── */
+/* ── Mic acquisition ────────────────────────────────────────── */
 function startMic(cb) {
   var c1 = { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } };
-  var c2 = { audio: true };
   navigator.mediaDevices.getUserMedia(c1)
-    .then(function(s) { buildGraph(s); cb(null); })
-    .catch(function() {
-      navigator.mediaDevices.getUserMedia(c2)
-        .then(function(s) { buildGraph(s); cb(null); })
-        .catch(function(e) { cb(e); });
+    .then(function(s){ buildGraph(s); cb(null); })
+    .catch(function(){
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(function(s){ buildGraph(s); cb(null); })
+        .catch(function(e){ cb(e); });
     });
 }
 
-/* ── start ── */
+/* ── Start handler ──────────────────────────────────────────── */
 function handleStart() {
-  hideAlert(); hideCentre();
+  hideToast();
   if (state === 'idle' || state === 'done') {
     confirmed = 0; hasPending = false; aboveThresh = false;
     dispRMS = 0; rawRMS = 0; bgRMS = 0.02; peakRMS = 0;
@@ -485,64 +766,75 @@ function handleStart() {
     clearTimeout(pendingTimer); display();
   }
   if (audioCtx) {
-    /* if profile changed since last run, filters already updated */
     state = 'running'; setStatus('running'); syncBtns();
     rafId = requestAnimationFrame(loop); return;
   }
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    showAlert('⚠️ 此瀏覽器不支援麥克風 API。<br>請改用 Chrome 60+ 或 Safari 11+，並以 https:// 開啟頁面。');
+    showToast('此瀏覽器不支援麥克風 API<br>請改用 Chrome 或 Safari（https://）');
     return;
   }
   if (location.protocol === 'file:') {
-    showAlert('⚠️ 從 <code>file://</code> 開啟，Chrome 封鎖麥克風。<br>請用：<code>python3 -m http.server 8000</code><br>然後開 <code>http://localhost:8000</code>');
+    showToast(
+      '從 <code>file://</code> 開啟，Chrome 封鎖麥克風<br>' +
+      '<code>python3 -m http.server 8000</code><br>' +
+      '然後開 <code>http://localhost:8000</code>'
+    );
     return;
   }
-  btnGo.disabled = true; btnGo.textContent = '請求麥克風…';
-  showCentre('正在請求<br>麥克風權限…', 'info');
+  btnGo.disabled = true;
+  btnGo.textContent = '請求中…';
+  showCentre('請求<br>麥克風…', 'hi');
   startMic(function(err) {
     hideCentre();
     if (err) {
       btnGo.disabled = false; syncBtns();
       var n = err.name || '';
-      var msg = n === 'NotAllowedError' || n === 'PermissionDeniedError'
-        ? '🚫 麥克風被拒絕。<br>請點 🔒/ⓘ 將麥克風改為「允許」後重新整理。'
-        : n === 'NotFoundError'
-          ? '🔇 找不到麥克風，請確認裝置已連接。'
-          : '⚠️ 麥克風錯誤：' + (err.message || n);
-      showAlert(msg); return;
+      showToast(
+        n === 'NotAllowedError' || n === 'PermissionDeniedError'
+          ? '🚫 麥克風被拒絕<br>請點 🔒 圖示 → 允許麥克風 → 重新整理'
+          : n === 'NotFoundError'
+            ? '🔇 找不到麥克風裝置'
+            : '⚠️ 麥克風錯誤：' + (err.message || n)
+      );
+      return;
     }
     state = 'running'; setStatus('running'); syncBtns();
     rafId = requestAnimationFrame(loop);
   });
 }
 
-/* ── pause / stop ── */
+/* ── Button events ────────────────────────────────────────── */
+btnGo.addEventListener('click', handleStart);
+
 btnHold.addEventListener('click', function() {
   if (state !== 'running') return;
   cancelAnimationFrame(rafId); clearPending();
   state = 'paused'; display(); setStatus('paused'); syncBtns();
-  elMeter.style.width = '0%'; elMeterPc.textContent = '0%';
+  elMeter.style.width = '0%'; elMeterPc.textContent = '–';
 });
+
 btnEnd.addEventListener('click', function() {
   if (state === 'idle') return;
   cancelAnimationFrame(rafId); clearPending();
-  state = 'done'; aboveThresh = false; dispRMS = 0; rawRMS = 0; peakRMS = 0;
+  state = 'done'; aboveThresh = false; dispRMS = 0; rawRMS = 0;
   display(); setStatus('done'); syncBtns();
-  elMeter.style.width = '0%'; elMeterPc.textContent = '0%';
+  elMeter.style.width = '0%'; elMeterPc.textContent = '–';
 });
-btnGo.addEventListener('click', handleStart);
 
 elMultSl.addEventListener('input', function() {
   elMultVal.textContent = parseFloat(elMultSl.value).toFixed(1) + '×';
 });
 elTarget.addEventListener('input', function() { targetDone = false; display(); });
 
-/* ── init ── */
+/* ── Init ────────────────────────────────────────────────── */
 setStatus('idle'); syncBtns(); display();
+
 if (location.protocol === 'file:') {
-  showAlert('⚠️ 目前從 <code>file://</code> 開啟，Chrome 封鎖麥克風。<br>' +
+  showToast(
+    '⚠️ 從 <code>file://</code> 開啟，Chrome 封鎖麥克風<br>' +
     '請用：<code>python3 -m http.server 8000</code><br>' +
-    '再以 <code>http://localhost:8000</code> 開啟。');
+    '再以 <code>http://localhost:8000</code> 開啟'
+  );
 }
 </script>
 </body>
