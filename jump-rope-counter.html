@@ -6,151 +6,92 @@
   <title>跳繩計數器</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --bg:      #0d0f14;
-      --card:    #1e2230;
-      --accent:  #00e5a0;
-      --accent2: #00b8ff;
-      --warn:    #ffbe00;
-      --danger:  #ff4757;
-      --text:    #e8eaf0;
-      --muted:   #6b7280;
+      --bg:     #0d0f14;
+      --card:   #1e2230;
+      --accent: #00e5a0;
+      --a2:     #00b8ff;
+      --warn:   #ffbe00;
+      --danger: #ff4757;
+      --text:   #e8eaf0;
+      --muted:  #6b7280;
     }
-
     body {
-      background: var(--bg);
-      color: var(--text);
+      background: var(--bg); color: var(--text);
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-      padding: 20px 16px 48px;
-      gap: 18px;
+      display: flex; flex-direction: column; align-items: center;
+      min-height: 100vh; padding: 20px 16px 48px; gap: 18px;
     }
+    h1 { font-size: 1.25rem; font-weight: 800; letter-spacing: .1em;
+         color: var(--accent); text-shadow: 0 0 20px rgba(0,229,160,.4); }
 
-    h1 {
-      font-size: 1.25rem;
-      font-weight: 800;
-      letter-spacing: .1em;
-      color: var(--accent);
-      text-shadow: 0 0 20px rgba(0,229,160,.4);
-    }
-
-    /* ── Alert bar (always visible when there's a message) ── */
+    /* alert bar */
     #alertBar {
-      display: none;
-      width: min(340px, 94vw);
-      background: rgba(255,71,87,.18);
-      border: 1.5px solid rgba(255,71,87,.5);
-      border-radius: 12px;
-      padding: 14px 16px;
-      font-size: .88rem;
-      color: #ff8a95;
-      line-height: 1.65;
-      text-align: center;
+      display: none; width: min(340px,94vw);
+      background: rgba(255,71,87,.18); border: 1.5px solid rgba(255,71,87,.5);
+      border-radius: 12px; padding: 14px 16px;
+      font-size: .85rem; color: #ff8a95; line-height: 1.65; text-align: center;
     }
-    #alertBar.info {
-      background: rgba(0,184,255,.12);
-      border-color: rgba(0,184,255,.4);
-      color: #7dd9ff;
-    }
-    #alertBar code {
-      background: rgba(255,255,255,.1);
-      border-radius: 4px;
-      padding: 1px 5px;
-      font-size: .82rem;
-    }
+    #alertBar.info { background: rgba(0,184,255,.12); border-color: rgba(0,184,255,.4); color: #7dd9ff; }
+    #alertBar code { background: rgba(255,255,255,.1); border-radius: 4px; padding: 1px 5px; font-size: .8rem; }
 
-    /* ── Ring display ── */
+    /* ring */
     .display-wrap {
-      position: relative;
-      width: min(300px, 88vw);
-      aspect-ratio: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      position: relative; width: min(300px,88vw); aspect-ratio: 1;
+      display: flex; align-items: center; justify-content: center;
     }
-
-    .ring-svg {
-      position: absolute; inset: 0;
-      width: 100%; height: 100%;
-      transform: rotate(-90deg);
-    }
+    .ring-svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
     .ring-bg       { fill: none; stroke: var(--card); stroke-width: 10; }
     .ring-progress { fill: none; stroke: var(--accent); stroke-width: 10; stroke-linecap: round;
                      transition: stroke-dashoffset .4s ease, stroke .3s; }
     .ring-progress.gold { stroke: var(--warn); }
 
-    .display-inner {
-      display: flex; flex-direction: column; align-items: center; gap: 4px;
-      z-index: 1; width: 80%; text-align: center;
-    }
-
+    .display-inner { display: flex; flex-direction: column; align-items: center; gap: 4px; z-index: 1; width: 80%; text-align: center; }
     #countNum {
-      font-size: clamp(68px, 20vw, 114px);
-      font-weight: 900;
-      line-height: 1;
-      color: var(--accent);
-      text-shadow: 0 0 28px rgba(0,229,160,.45);
-      font-variant-numeric: tabular-nums;
-      transition: color .2s, text-shadow .2s;
+      font-size: clamp(68px,20vw,114px); font-weight: 900; line-height: 1;
+      color: var(--accent); text-shadow: 0 0 28px rgba(0,229,160,.45);
+      font-variant-numeric: tabular-nums; transition: color .2s, text-shadow .2s;
     }
-    #countNum.pending  { color: var(--warn);   text-shadow: 0 0 28px rgba(255,190,0,.5); }
-    #countNum.complete { color: var(--warn);   text-shadow: 0 0 36px rgba(255,190,0,.8);
+    #countNum.pending  { color: var(--warn); text-shadow: 0 0 28px rgba(255,190,0,.5); }
+    #countNum.complete { color: var(--warn); text-shadow: 0 0 36px rgba(255,190,0,.8);
                          animation: pulse .6s ease infinite alternate; }
-
-    /* centre message (replaces counter when there's an issue) */
-    #centreMsg {
-      display: none;
-      font-size: .78rem;
-      color: #ff8a95;
-      line-height: 1.6;
-      padding: 0 8px;
-    }
-    #centreMsg.info { color: #7dd9ff; }
-
     @keyframes pulse { to { transform: scale(1.05); } }
-
+    #centreMsg { display: none; font-size: .8rem; color: #ff8a95; line-height: 1.6; padding: 0 8px; }
+    #centreMsg.info { color: #7dd9ff; }
     .count-label { font-size: .8rem; color: var(--muted); letter-spacing: .14em; text-transform: uppercase; }
-    #targetHint  { font-size: .78rem; color: var(--muted); margin-top: 2px; display: none; }
+    #targetHint { font-size: .78rem; color: var(--muted); margin-top: 2px; display: none; }
     #targetHint span { color: var(--warn); font-weight: 700; }
 
-    /* ── Status ── */
-    #statusRow {
-      display: flex; align-items: center; gap: 8px;
-      font-size: .85rem; color: var(--muted); min-height: 22px;
-    }
-    .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+    /* status */
+    #statusRow { display: flex; align-items: center; gap: 8px; font-size: .85rem; color: var(--muted); min-height: 22px; }
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
     .dot.on   { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: blink 1s step-start infinite; }
     .dot.hold { background: var(--warn);   box-shadow: 0 0 8px var(--warn); }
     .dot.off  { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
     @keyframes blink { 50% { opacity: .2; } }
 
-    /* ── Volume meter ── */
-    .meter-row {
-      display: flex; align-items: center; gap: 10px;
-      width: min(300px, 88vw); font-size: .75rem; color: var(--muted);
-    }
-    .bar-bg { flex: 1; height: 7px; background: var(--card); border-radius: 4px; overflow: hidden; }
-    #meterBar { height: 100%; width: 0%; border-radius: 4px;
-                background: linear-gradient(90deg, var(--accent2), var(--accent));
-                transition: width .05s; }
+    /* meter */
+    .meter-block { display: flex; flex-direction: column; gap: 6px; width: min(300px,88vw); }
+    .meter-row   { display: flex; align-items: center; gap: 10px; font-size: .75rem; color: var(--muted); }
+    .bar-bg      { flex: 1; height: 9px; background: var(--card); border-radius: 5px; overflow: hidden; position: relative; }
+    #meterBar    { height: 100%; width: 0%; border-radius: 5px;
+                   background: linear-gradient(90deg, var(--a2), var(--accent)); transition: width .04s; }
+    /* threshold marker inside bar */
+    #threshMark  { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--warn);
+                   border-radius: 1px; transition: left .15s; }
 
-    /* ── Settings card ── */
-    .card {
-      width: min(300px, 88vw);
-      background: var(--card);
-      border-radius: 16px;
-      padding: 18px;
-      display: flex; flex-direction: column; gap: 16px;
-    }
+    /* calibration row */
+    #calRow { display: flex; justify-content: space-between; font-size: .72rem; color: var(--muted); padding: 0 2px; }
+    #calRow span { transition: color .3s; }
+    #calRow .hi  { color: var(--accent); font-weight: 700; }
+
+    /* settings */
+    .card { width: min(300px,88vw); background: var(--card); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 16px; }
     .card-title { font-size: .72rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
-
-    .row     { display: flex; flex-direction: column; gap: 8px; }
-    .row-hd  { display: flex; justify-content: space-between; font-size: .9rem; }
+    .row    { display: flex; flex-direction: column; gap: 8px; }
+    .row-hd { display: flex; justify-content: space-between; font-size: .9rem; }
     .row-hd em { color: var(--accent); font-style: normal; font-weight: 700; }
+    .row-sub { font-size: .72rem; color: var(--muted); }
 
     input[type=range] {
       -webkit-appearance: none; width: 100%; height: 6px;
@@ -161,92 +102,88 @@
       background: var(--accent); box-shadow: 0 0 8px rgba(0,229,160,.5); cursor: pointer;
     }
     input[type=range]::-moz-range-thumb {
-      width: 20px; height: 20px; border-radius: 50%;
-      background: var(--accent); border: none; cursor: pointer;
+      width: 20px; height: 20px; border-radius: 50%; background: var(--accent); border: none; cursor: pointer;
     }
-
     .target-row { display: flex; align-items: center; gap: 10px; }
     input[type=number] {
-      background: #0d0f14; border: 1.5px solid var(--muted);
-      border-radius: 8px; color: var(--text); font-size: 1rem;
-      padding: 8px 12px; width: 110px; outline: none; text-align: center;
-      transition: border-color .2s;
+      background: #0d0f14; border: 1.5px solid var(--muted); border-radius: 8px;
+      color: var(--text); font-size: 1rem; padding: 8px 12px; width: 110px;
+      outline: none; text-align: center; transition: border-color .2s;
     }
     input[type=number]:focus { border-color: var(--accent); }
     input[type=number]::-webkit-inner-spin-button,
     input[type=number]::-webkit-outer-spin-button { opacity: 1; }
     .note { font-size: .78rem; color: var(--muted); }
 
-    /* ── Buttons ── */
-    .btn-row { display: flex; gap: 12px; width: min(300px, 88vw); }
+    /* buttons */
+    .btn-row { display: flex; gap: 12px; width: min(300px,88vw); }
     .btn {
       flex: 1; padding: 17px 4px; border: none; border-radius: 14px;
       font-size: 1rem; font-weight: 700; cursor: pointer;
       transition: transform .12s, box-shadow .2s, opacity .2s;
-      letter-spacing: .04em; -webkit-tap-highlight-color: transparent;
+      -webkit-tap-highlight-color: transparent;
     }
     .btn:active  { transform: scale(.95); }
     .btn:disabled { opacity: .3; cursor: not-allowed; transform: none; }
     .btn-go   { background: var(--accent);  color: #0d0f14; box-shadow: 0 0 20px rgba(0,229,160,.3); }
-    .btn-hold { background: var(--warn);    color: #0d0f14; box-shadow: 0 0 20px rgba(255,190,0,.25); }
-    .btn-end  { background: var(--danger);  color: #fff;    box-shadow: 0 0 20px rgba(255,71,87,.2); }
+    .btn-hold { background: var(--warn);    color: #0d0f14; }
+    .btn-end  { background: var(--danger);  color: #fff; }
 
-    /* ── Flash ── */
-    #flash {
-      position: fixed; inset: 0; pointer-events: none;
-      opacity: 0; background: rgba(0,229,160,.12); transition: opacity .08s;
-    }
+    /* flash */
+    #flash { position: fixed; inset: 0; pointer-events: none; opacity: 0; background: rgba(0,229,160,.12); transition: opacity .08s; }
     #flash.on { opacity: 1; }
   </style>
 </head>
 <body>
 
 <div id="flash"></div>
-
 <h1>🪢 跳繩計數器</h1>
-
-<!-- Alert bar: visible errors / warnings -->
 <div id="alertBar"></div>
 
-<!-- Counter ring -->
+<!-- counter ring -->
 <div class="display-wrap">
   <svg class="ring-svg" viewBox="0 0 200 200">
-    <circle class="ring-bg"       cx="100" cy="100" r="88"/>
-    <circle class="ring-progress" cx="100" cy="100" r="88" id="ring"
-            stroke-dasharray="553" stroke-dashoffset="553"/>
+    <circle class="ring-bg" cx="100" cy="100" r="88"/>
+    <circle class="ring-progress" cx="100" cy="100" r="88" id="ring" stroke-dasharray="553" stroke-dashoffset="553"/>
   </svg>
   <div class="display-inner">
     <div id="countNum">0</div>
-    <!-- centre message replaces number on error -->
     <div id="centreMsg"></div>
     <div class="count-label">次數</div>
     <div id="targetHint">目標：<span id="targetNum">0</span> 次</div>
   </div>
 </div>
 
-<!-- Status -->
-<div id="statusRow">
-  <div class="dot" id="dot"></div>
-  <span id="statusTxt">待機中</span>
+<div id="statusRow"><div class="dot" id="dot"></div><span id="statusTxt">待機中</span></div>
+
+<!-- meter + calibration info -->
+<div class="meter-block">
+  <div class="meter-row">
+    <span>音量</span>
+    <div class="bar-bg">
+      <div id="meterBar"></div>
+      <div id="threshMark" style="left:50%"></div>
+    </div>
+    <span id="meterPct">0%</span>
+  </div>
+  <div id="calRow">
+    <span id="calBg">背景：–</span>
+    <span id="calTrig">觸發線：–</span>
+    <span id="calPeak">峰值：–</span>
+  </div>
 </div>
 
-<!-- Volume meter -->
-<div class="meter-row">
-  <span>音量</span>
-  <div class="bar-bg"><div id="meterBar"></div></div>
-  <span id="meterPct">0%</span>
-</div>
-
-<!-- Settings -->
+<!-- settings -->
 <div class="card">
   <div class="card-title">設定</div>
 
   <div class="row">
     <div class="row-hd">
-      <span>靈敏度（觸發閾值）</span>
-      <em id="threshVal">15%</em>
+      <span>靈敏度（觸發倍率）</span>
+      <em id="multVal">2.5×</em>
     </div>
-    <input type="range" id="thresh" min="3" max="60" value="15">
+    <input type="range" id="multSlider" min="1.5" max="8" value="2.5" step="0.5">
+    <div class="row-sub">數值越小越靈敏；建議先開始，看觸發線是否落在音量峰值內</div>
   </div>
 
   <div class="row">
@@ -258,7 +195,7 @@
   </div>
 </div>
 
-<!-- Buttons -->
+<!-- buttons -->
 <div class="btn-row">
   <button class="btn btn-go"   id="btnGo">開始</button>
   <button class="btn btn-hold" id="btnHold" disabled>暫停</button>
@@ -266,23 +203,48 @@
 </div>
 
 <script>
-/* ── Globals ── */
+/* ───────────────────────────────────────────────
+   Detection algorithm: DYNAMIC threshold
+   threshold = max(bgRMS × multiplier, ABS_FLOOR)
+
+   bgRMS tracks the ambient noise level slowly.
+   When RMS spikes above threshold → rising edge → one hit.
+   Background tracker pauses during a hit so loud hits
+   don't inflate the background estimate.
+─────────────────────────────────────────────── */
+
 var audioCtx, analyser, rafId;
 var state = 'idle';
 var confirmed = 0, hasPending = false, pendingTimer = null;
-var lastHit = 0, aboveThresh = false, targetDone = false, rmsSmooth = 0;
-var SILENCE = 1800, DEBOUNCE = 250, SMOOTH = 0.25;
-var CIRC = 553;
+var lastHit = 0, aboveThresh = false, targetDone = false;
 
-/* ── DOM ── */
+/* tracking */
+var rawRMS   = 0;   /* current frame RMS (unsmoothed)            */
+var dispRMS  = 0;   /* fast-smoothed for meter display           */
+var bgRMS    = 0.02;/* slow background estimate, init 2% floor  */
+var peakRMS  = 0;   /* decaying peak for calibration display     */
+
+var BG_UP    = 0.04; /* background rise speed (slower = safer)  */
+var BG_DOWN  = 0.01; /* background fall speed                    */
+var DISP_A   = 0.35; /* display smoothing factor                 */
+var ABS_FLOOR= 0.003;/* absolute minimum threshold (raw RMS)     */
+var SILENCE  = 1800; /* ms silence → discard last pending hit    */
+var DEBOUNCE = 260;  /* ms min gap between hits                  */
+var CIRC     = 553;
+
+/* DOM */
 var elNum     = document.getElementById('countNum');
 var elCentre  = document.getElementById('centreMsg');
 var elDot     = document.getElementById('dot');
 var elStatus  = document.getElementById('statusTxt');
 var elMeter   = document.getElementById('meterBar');
 var elMeterPc = document.getElementById('meterPct');
-var elThresh  = document.getElementById('thresh');
-var elThreshV = document.getElementById('threshVal');
+var elThMark  = document.getElementById('threshMark');
+var elCalBg   = document.getElementById('calBg');
+var elCalTrig = document.getElementById('calTrig');
+var elCalPeak = document.getElementById('calPeak');
+var elMultSl  = document.getElementById('multSlider');
+var elMultVal = document.getElementById('multVal');
 var elTarget  = document.getElementById('targetIn');
 var elTargetH = document.getElementById('targetHint');
 var elTargetN = document.getElementById('targetNum');
@@ -293,54 +255,40 @@ var btnGo     = document.getElementById('btnGo');
 var btnHold   = document.getElementById('btnHold');
 var btnEnd    = document.getElementById('btnEnd');
 
-/* ── Alert helpers ── */
+/* ── helpers ── */
 function showAlert(html, type) {
-  elAlert.innerHTML = html;
-  elAlert.className = type === 'info' ? 'info' : '';
+  elAlert.innerHTML = html; elAlert.className = type === 'info' ? 'info' : '';
   elAlert.style.display = 'block';
 }
 function hideAlert() { elAlert.style.display = 'none'; }
 
-/* ── Centre message (inside ring) ── */
 function showCentre(html, type) {
   elNum.style.display = 'none';
-  elCentre.innerHTML  = html;
-  elCentre.className  = type === 'info' ? 'info' : '';
+  elCentre.innerHTML = html; elCentre.className = type === 'info' ? 'info' : '';
   elCentre.style.display = 'block';
 }
-function hideCentre() {
-  elCentre.style.display = 'none';
-  elNum.style.display    = '';
-}
+function hideCentre() { elCentre.style.display = 'none'; elNum.style.display = ''; }
 
-/* ── Status ── */
 function setStatus(s) {
   var cls = { idle:'', running:'on', paused:'hold', done:'off' };
   elDot.className = 'dot ' + (cls[s] || '');
   var lbl = { idle:'待機中', running:'偵測中…', paused:'已暫停', done:'已結束' };
   elStatus.textContent = lbl[s] || s;
 }
-
-/* ── Buttons ── */
 function syncBtns() {
   btnGo.disabled   = (state === 'running' || state === 'done');
   btnHold.disabled = (state !== 'running');
   btnEnd.disabled  = (state === 'idle' || state === 'done');
   btnGo.textContent = state === 'paused' ? '繼續' : '開始';
 }
-
-/* ── Display ── */
 function display() {
-  var n = confirmed + (hasPending ? 1 : 0);
+  var n   = confirmed + (hasPending ? 1 : 0);
   var tgt = parseInt(elTarget.value, 10) || 0;
   var done = tgt > 0 && n >= tgt;
-
   elNum.textContent = n;
   elNum.className   = done ? 'complete' : hasPending ? 'pending' : '';
-
   if (tgt > 0) {
-    elTargetH.style.display = '';
-    elTargetN.textContent   = tgt;
+    elTargetH.style.display = ''; elTargetN.textContent = tgt;
     elRing.style.strokeDashoffset = CIRC * (1 - Math.min(n / tgt, 1));
     elRing.className = 'ring-progress' + (done ? ' gold' : '');
   } else {
@@ -350,7 +298,7 @@ function display() {
   }
 }
 
-/* ── Bell ── */
+/* ── bell ── */
 function bell() {
   try {
     var c = new (window.AudioContext || window.webkitAudioContext)();
@@ -366,22 +314,16 @@ function bell() {
     setTimeout(function(){ c.close(); }, 3500);
   } catch(e) {}
 }
+function doFlash() { elFlash.className = 'on'; setTimeout(function(){ elFlash.className = ''; }, 100); }
 
-function flash() {
-  elFlash.className = 'on';
-  setTimeout(function(){ elFlash.className = ''; }, 100);
-}
-
-/* ── Hit logic ── */
+/* ── hit registration ── */
 function clearPending() { clearTimeout(pendingTimer); hasPending = false; }
-
 function schedSilence() {
   clearTimeout(pendingTimer);
   pendingTimer = setTimeout(function() {
     if (state === 'running' && hasPending) { hasPending = false; display(); }
   }, SILENCE);
 }
-
 function hit() {
   var now = Date.now();
   if (now - lastHit < DEBOUNCE) return;
@@ -390,185 +332,172 @@ function hit() {
   hasPending = true;
   var tgt = parseInt(elTarget.value, 10) || 0;
   if (tgt > 0 && confirmed + 1 >= tgt && !targetDone) { targetDone = true; bell(); }
-  flash(); display(); schedSilence();
+  doFlash(); display(); schedSilence();
 }
 
-/* ── Analysis loop ── */
+/* ── meter & calibration display ── */
+function updateMeter(dynThresh) {
+  /* Scale the bar so the trigger line sits at ~40% of bar width.
+     This way a hit (which is 2–8× background) clearly exceeds the line. */
+  var scale  = 0.4 / Math.max(dynThresh, ABS_FLOOR);
+  var pct    = Math.min(dispRMS * scale * 100, 100);
+  var thPct  = Math.min(dynThresh * scale * 100, 100);
+
+  elMeter.style.width    = pct + '%';
+  elMeterPc.textContent  = Math.round(pct) + '%';
+  elThMark.style.left    = thPct + '%';
+
+  /* update peak */
+  if (rawRMS > peakRMS) peakRMS = rawRMS;
+  else peakRMS *= 0.995; /* slow decay */
+
+  elCalBg.textContent   = '背景：' + (bgRMS  * 1000).toFixed(1) + 'm';
+  elCalTrig.textContent = '觸發線：' + (dynThresh * 1000).toFixed(1) + 'm';
+  elCalPeak.textContent = '峰值：' + (peakRMS * 1000).toFixed(1) + 'm';
+
+  /* highlight trigger label when peak exceeds it (means it would trigger) */
+  elCalTrig.className = (peakRMS > dynThresh) ? 'hi' : '';
+}
+
+/* ── analysis loop ── */
 function loop() {
   if (state !== 'running') return;
+
   var buf = new Float32Array(analyser.fftSize);
   analyser.getFloatTimeDomainData(buf);
-  var s = 0;
-  for (var i = 0; i < buf.length; i++) s += buf[i] * buf[i];
-  var rms = Math.sqrt(s / buf.length);
-  rmsSmooth += SMOOTH * (rms - rmsSmooth);
-  var pct = Math.min(rmsSmooth * 400, 100);
-  elMeter.style.width   = pct + '%';
-  elMeterPc.textContent = Math.round(pct) + '%';
-  var thresh = parseFloat(elThresh.value) / 100;
-  var above  = rms > thresh;
+
+  /* RMS of this frame */
+  var sumSq = 0;
+  for (var i = 0; i < buf.length; i++) sumSq += buf[i] * buf[i];
+  rawRMS = Math.sqrt(sumSq / buf.length);
+
+  /* fast display smoother */
+  dispRMS += DISP_A * (rawRMS - dispRMS);
+
+  /* background tracker: only update when NOT in a hit.
+     Rise quickly to avoid false triggers on startup;
+     fall slowly so brief loud sounds don't permanently raise bg. */
+  if (!aboveThresh) {
+    if (rawRMS > bgRMS) bgRMS += BG_UP   * (rawRMS - bgRMS);
+    else                 bgRMS += BG_DOWN * (rawRMS - bgRMS);
+  }
+
+  /* dynamic threshold */
+  var mult = parseFloat(elMultSl.value);
+  var dynThresh = Math.max(bgRMS * mult, ABS_FLOOR);
+
+  /* rising-edge onset detection */
+  var above = rawRMS > dynThresh;
   if (above && !aboveThresh) hit();
   aboveThresh = above;
+
+  updateMeter(dynThresh);
   rafId = requestAnimationFrame(loop);
 }
 
-/* ── Mic setup ── */
-function doGetUserMedia(constraints, cb) {
-  navigator.mediaDevices.getUserMedia(constraints)
-    .then(function(stream) { cb(null, stream); })
-    .catch(function(err)   { cb(err, null); });
-}
-
+/* ── mic setup ── */
 function startMic(cb) {
-  doGetUserMedia(
-    { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } },
-    function(err, stream) {
-      if (err) {
-        /* fallback: try plain audio:true */
-        doGetUserMedia({ audio: true }, function(err2, stream2) {
-          if (err2) return cb(err2);
-          buildGraph(stream2); cb(null);
-        });
-      } else {
-        buildGraph(stream); cb(null);
-      }
-    }
-  );
+  var constraints1 = { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } };
+  var constraints2 = { audio: true };
+  navigator.mediaDevices.getUserMedia(constraints1)
+    .then(function(s) { buildGraph(s); cb(null); })
+    .catch(function() {
+      navigator.mediaDevices.getUserMedia(constraints2)
+        .then(function(s) { buildGraph(s); cb(null); })
+        .catch(function(e) { cb(e); });
+    });
 }
-
 function buildGraph(stream) {
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   analyser = audioCtx.createAnalyser();
-  analyser.fftSize = 1024;
-  analyser.smoothingTimeConstant = 0;
+  analyser.fftSize = 2048;               /* ~46ms frame at 44100Hz */
+  analyser.smoothingTimeConstant = 0;    /* no built-in smoothing; we do it ourselves */
   audioCtx.createMediaStreamSource(stream).connect(analyser);
 }
 
-/* ── Handle start click ── */
+/* ── start button ── */
 function handleStart() {
-  hideAlert();
-  hideCentre();
+  hideAlert(); hideCentre();
 
-  /* Reset on fresh start */
   if (state === 'idle' || state === 'done') {
     confirmed = 0; hasPending = false; aboveThresh = false;
-    rmsSmooth = 0; lastHit = 0; targetDone = false;
-    clearTimeout(pendingTimer);
-    display();
+    dispRMS = 0; rawRMS = 0; bgRMS = 0.02; peakRMS = 0;
+    lastHit = 0; targetDone = false;
+    clearTimeout(pendingTimer); display();
   }
 
-  /* If already have audio context, just resume */
   if (audioCtx) {
-    state = 'running';
-    setStatus('running'); syncBtns();
-    rafId = requestAnimationFrame(loop);
-    return;
+    state = 'running'; setStatus('running'); syncBtns();
+    rafId = requestAnimationFrame(loop); return;
   }
 
-  /* Check browser support */
-  if (typeof navigator === 'undefined' ||
-      !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    showAlert(
-      '⚠️ 此瀏覽器不支援麥克風 API。<br>' +
-      '請改用 <b>Chrome 60+</b> 或 <b>Safari 11+</b>，<br>' +
-      '並確認頁面以 <b>https://</b> 或 <b>localhost</b> 開啟。',
-      'err'
-    );
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showAlert('⚠️ 此瀏覽器不支援麥克風 API。<br>請改用 Chrome 60+ 或 Safari 11+，<br>並以 https:// 開啟頁面。', 'err');
     return;
   }
-
-  /* Detect file:// — Chrome blocks getUserMedia on file:// */
   if (location.protocol === 'file:') {
     showAlert(
-      '⚠️ 從 <code>file://</code> 開啟時，Chrome 會封鎖麥克風。<br>' +
-      '請改用本機伺服器開啟此檔：<br>' +
+      '⚠️ 從 <code>file://</code> 開啟，Chrome 會封鎖麥克風。<br>' +
+      '請改用本機伺服器：<br>' +
       '<code>python3 -m http.server 8000</code><br>' +
-      '然後在瀏覽器開啟 <code>http://localhost:8000</code>',
-      'err'
-    );
+      '然後開 <code>http://localhost:8000</code>', 'err');
     return;
   }
 
-  /* Show immediate feedback — synchronously, before any async */
-  btnGo.disabled    = true;
-  btnGo.textContent = '請求麥克風中…';
+  btnGo.disabled = true; btnGo.textContent = '請求麥克風…';
   showCentre('正在請求<br>麥克風權限…', 'info');
-  setStatus('idle');
 
   startMic(function(err) {
     hideCentre();
-
     if (err) {
-      btnGo.disabled    = false;
-      btnGo.textContent = '開始';
-      syncBtns();
-
+      btnGo.disabled = false; syncBtns();
       var n = err.name || '';
       var msg;
-      if (n === 'NotAllowedError' || n === 'PermissionDeniedError') {
-        msg = '🚫 麥克風權限被拒絕。<br>' +
-              '請點擊網址列左側的 🔒 / ⓘ 圖示，<br>' +
-              '將麥克風改為「允許」，<br>' +
-              '重新整理頁面後再按開始。';
-      } else if (n === 'NotFoundError' || n === 'DevicesNotFoundError') {
-        msg = '🔇 找不到麥克風裝置，<br>請確認已連接或啟用麥克風。';
-      } else if (n === 'NotReadableError' || n === 'TrackStartError') {
-        msg = '⚠️ 麥克風被其他應用程式佔用，<br>請關閉其他使用麥克風的程式後再試。';
-      } else {
-        msg = '⚠️ 麥克風啟動失敗：<br>' + (err.message || n || '未知錯誤');
-      }
-      showAlert(msg, 'err');
-      return;
+      if (n === 'NotAllowedError' || n === 'PermissionDeniedError')
+        msg = '🚫 麥克風權限被拒絕。<br>請點擊網址列左側 🔒/ⓘ，<br>將麥克風改為「允許」後重新整理再試。';
+      else if (n === 'NotFoundError')
+        msg = '🔇 找不到麥克風，請確認裝置已連接。';
+      else
+        msg = '⚠️ 麥克風錯誤：' + (err.message || n);
+      showAlert(msg, 'err'); return;
     }
-
-    /* Success */
-    state = 'running';
-    setStatus('running'); syncBtns();
+    state = 'running'; setStatus('running'); syncBtns();
     rafId = requestAnimationFrame(loop);
   });
 }
 
-/* ── Button events ── */
-btnGo.addEventListener('click',  handleStart);
-
+/* ── pause / stop ── */
 btnHold.addEventListener('click', function() {
   if (state !== 'running') return;
-  cancelAnimationFrame(rafId);
-  clearPending(); state = 'paused';
-  display(); setStatus('paused'); syncBtns();
+  cancelAnimationFrame(rafId); clearPending();
+  state = 'paused'; display(); setStatus('paused'); syncBtns();
   elMeter.style.width = '0%'; elMeterPc.textContent = '0%';
 });
-
 btnEnd.addEventListener('click', function() {
   if (state === 'idle') return;
-  cancelAnimationFrame(rafId);
-  clearPending(); state = 'done';
-  aboveThresh = false; rmsSmooth = 0;
+  cancelAnimationFrame(rafId); clearPending();
+  state = 'done'; aboveThresh = false; dispRMS = 0; rawRMS = 0; peakRMS = 0;
   display(); setStatus('done'); syncBtns();
   elMeter.style.width = '0%'; elMeterPc.textContent = '0%';
 });
 
-/* ── Slider ── */
-elThresh.addEventListener('input', function() {
-  elThreshV.textContent = elThresh.value + '%';
+btnGo.addEventListener('click', handleStart);
+
+/* ── slider ── */
+elMultSl.addEventListener('input', function() {
+  elMultVal.textContent = parseFloat(elMultSl.value).toFixed(1) + '×';
 });
 
-/* ── Target input ── */
-elTarget.addEventListener('input', function() {
-  targetDone = false; display();
-});
+/* ── target ── */
+elTarget.addEventListener('input', function() { targetDone = false; display(); });
 
-/* ── Init ── */
+/* ── init ── */
 setStatus('idle'); syncBtns(); display();
-
-/* Warn immediately if on file:// */
 if (location.protocol === 'file:') {
   showAlert(
     '⚠️ 目前從 <code>file://</code> 開啟，Chrome 會封鎖麥克風。<br>' +
-    '請用本機伺服器：<code>python3 -m http.server 8000</code><br>' +
-    '再以 <code>http://localhost:8000</code> 開啟此頁。',
-    'err'
-  );
+    '請用：<code>python3 -m http.server 8000</code><br>' +
+    '再以 <code>http://localhost:8000</code> 開啟。', 'err');
 }
 </script>
 </body>
