@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>跳繩計數器</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0f14;
+      --surface: #161921;
+      --card: #1e2230;
+      --accent: #00e5a0;
+      --accent2: #00b8ff;
+      --warn: #ffbe00;
+      --danger: #ff4757;
+      --text: #e8eaf0;
+      --muted: #6b7280;
+      --radius: 16px;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      overflow-x: hidden;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px 16px 40px;
+      gap: 20px;
+    }
+
+    h1 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      text-transform: uppercase;
+      text-shadow: 0 0 20px rgba(0,229,160,.4);
+    }
+
+    /* ── Count display ── */
+    .display-wrap {
+      position: relative;
+      width: min(320px, 90vw);
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ring-svg {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .ring-bg {
+      fill: none;
+      stroke: var(--card);
+      stroke-width: 10;
+    }
+
+    .ring-progress {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 10;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.4s ease, stroke 0.3s;
+    }
+
+    .ring-progress.complete { stroke: var(--warn); }
+
+    .display-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      z-index: 1;
+    }
+
+    .count-number {
+      font-size: clamp(72px, 22vw, 120px);
+      font-weight: 900;
+      line-height: 1;
+      color: var(--accent);
+      text-shadow: 0 0 30px rgba(0,229,160,.5);
+      transition: color 0.2s, text-shadow 0.2s;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -2px;
+    }
+
+    .count-number.pending {
+      color: var(--warn);
+      text-shadow: 0 0 30px rgba(255,190,0,.5);
+    }
+
+    .count-number.complete {
+      color: var(--warn);
+      text-shadow: 0 0 40px rgba(255,190,0,.8);
+      animation: pulse 0.6s ease infinite alternate;
+    }
+
+    @keyframes pulse {
+      from { transform: scale(1); }
+      to   { transform: scale(1.04); }
+    }
+
+    .count-label {
+      font-size: 0.85rem;
+      color: var(--muted);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    .target-hint {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .target-hint span { color: var(--warn); font-weight: 700; }
+
+    /* ── Status bar ── */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      color: var(--muted);
+      min-height: 24px;
+    }
+
+    .dot {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      background: var(--muted);
+      flex-shrink: 0;
+    }
+    .dot.active  { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: blink 1s step-start infinite; }
+    .dot.paused  { background: var(--warn); box-shadow: 0 0 8px var(--warn); }
+    .dot.done    { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+
+    @keyframes blink { 50% { opacity: 0.2; } }
+
+    /* ── Volume meter ── */
+    .meter-wrap {
+      width: min(320px, 90vw);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .meter-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .meter-bar-bg {
+      flex: 1;
+      height: 8px;
+      background: var(--card);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .meter-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent2), var(--accent));
+      border-radius: 4px;
+      transition: width 0.05s;
+    }
+
+    .threshold-line-wrap {
+      position: relative;
+      flex: 1;
+    }
+
+    /* ── Sensitivity slider ── */
+    .settings-card {
+      width: min(320px, 90vw);
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .settings-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+    }
+
+    .setting-row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .setting-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+    }
+
+    .setting-label span:last-child {
+      color: var(--accent);
+      font-weight: 700;
+      min-width: 36px;
+      text-align: right;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: var(--surface);
+      outline: none;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px rgba(0,229,160,.5);
+      cursor: pointer;
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: none;
+      cursor: pointer;
+    }
+
+    .target-input-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    input[type="number"] {
+      background: var(--surface);
+      border: 1.5px solid var(--muted);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 1rem;
+      padding: 8px 12px;
+      width: 110px;
+      outline: none;
+      text-align: center;
+      transition: border-color 0.2s;
+    }
+    input[type="number"]:focus { border-color: var(--accent); }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { opacity: 1; }
+
+    .target-note {
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    /* ── Buttons ── */
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      width: min(320px, 90vw);
+    }
+
+    .btn {
+      flex: 1;
+      padding: 16px 8px;
+      border: none;
+      border-radius: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.12s, opacity 0.2s, box-shadow 0.2s;
+      letter-spacing: 0.05em;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn:active { transform: scale(0.95); }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+    .btn-start {
+      background: var(--accent);
+      color: #0d0f14;
+      box-shadow: 0 0 20px rgba(0,229,160,.35);
+    }
+    .btn-start:not(:disabled):hover { box-shadow: 0 0 28px rgba(0,229,160,.55); }
+
+    .btn-pause {
+      background: var(--warn);
+      color: #0d0f14;
+      box-shadow: 0 0 20px rgba(255,190,0,.3);
+    }
+    .btn-pause:not(:disabled):hover { box-shadow: 0 0 28px rgba(255,190,0,.5); }
+
+    .btn-stop {
+      background: var(--danger);
+      color: #fff;
+      box-shadow: 0 0 20px rgba(255,71,87,.25);
+    }
+    .btn-stop:not(:disabled):hover { box-shadow: 0 0 28px rgba(255,71,87,.45); }
+
+    /* ── Flash overlay ── */
+    .flash {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      background: rgba(0,229,160,.12);
+      transition: opacity 0.08s;
+    }
+    .flash.show { opacity: 1; }
+
+    /* ── Permission overlay ── */
+    .perm-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(13,15,20,.92);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      z-index: 100;
+      padding: 24px;
+      text-align: center;
+    }
+    .perm-overlay.hidden { display: none; }
+
+    .perm-icon { font-size: 3rem; }
+    .perm-title { font-size: 1.2rem; font-weight: 700; color: var(--accent); }
+    .perm-desc  { color: var(--muted); font-size: 0.9rem; line-height: 1.6; max-width: 300px; }
+    .perm-btn {
+      background: var(--accent);
+      color: #0d0f14;
+      border: none;
+      border-radius: 12px;
+      padding: 14px 36px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .perm-err { color: var(--danger); font-size: 0.85rem; display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- Flash feedback on each count -->
+  <div class="flash" id="flash"></div>
+
+  <!-- Microphone permission prompt -->
+  <div class="perm-overlay" id="permOverlay">
+    <div class="perm-icon">🎙️</div>
+    <div class="perm-title">需要麥克風權限</div>
+    <div class="perm-desc">本應用使用麥克風聆聽跳繩打地聲音，自動計算跳繩次數。<br>請點擊下方按鈕授予麥克風使用權限。</div>
+    <button class="perm-btn" id="grantBtn">授予麥克風權限</button>
+    <div class="perm-err" id="permErr">無法存取麥克風，請在瀏覽器設定中允許麥克風權限後重新整理。</div>
+  </div>
+
+  <h1>🪢 跳繩計數器</h1>
+
+  <!-- Main counter ring -->
+  <div class="display-wrap">
+    <svg class="ring-svg" viewBox="0 0 200 200">
+      <circle class="ring-bg" cx="100" cy="100" r="88"/>
+      <circle class="ring-progress" id="ringProgress" cx="100" cy="100" r="88"
+              stroke-dasharray="553" stroke-dashoffset="553"/>
+    </svg>
+    <div class="display-inner">
+      <div class="count-number" id="countDisplay">0</div>
+      <div class="count-label">次數</div>
+      <div class="target-hint" id="targetHint" style="display:none">
+        目標：<span id="targetDisplay">0</span> 次
+      </div>
+    </div>
+  </div>
+
+  <!-- Status indicator -->
+  <div class="status-bar">
+    <div class="dot" id="statusDot"></div>
+    <span id="statusText">待機中</span>
+  </div>
+
+  <!-- Volume meter -->
+  <div class="meter-wrap">
+    <div class="meter-row">
+      <span>音量</span>
+      <div class="meter-bar-bg">
+        <div class="meter-bar" id="meterBar"></div>
+      </div>
+      <span id="meterVal">0%</span>
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div class="settings-card">
+    <div class="settings-title">設定</div>
+
+    <div class="setting-row">
+      <div class="setting-label">
+        <span>靈敏度（觸發閾值）</span>
+        <span id="threshLabel">15%</span>
+      </div>
+      <input type="range" id="threshSlider" min="3" max="60" value="15" step="1">
+    </div>
+
+    <div class="setting-row">
+      <div class="setting-label">
+        <span>目標次數</span>
+      </div>
+      <div class="target-input-row">
+        <input type="number" id="targetInput" min="0" max="9999" value="0" placeholder="0 = 不限">
+        <span class="target-note">0 為不限制</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Control buttons -->
+  <div class="btn-row">
+    <button class="btn btn-start" id="btnStart">開始</button>
+    <button class="btn btn-pause" id="btnPause" disabled>暫停</button>
+    <button class="btn btn-stop"  id="btnStop"  disabled>結束</button>
+  </div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ── DOM ──────────────────────────────────────────────────────────────
+  const countDisplay  = document.getElementById('countDisplay');
+  const statusDot     = document.getElementById('statusDot');
+  const statusText    = document.getElementById('statusText');
+  const meterBar      = document.getElementById('meterBar');
+  const meterVal      = document.getElementById('meterVal');
+  const threshSlider  = document.getElementById('threshSlider');
+  const threshLabel   = document.getElementById('threshLabel');
+  const targetInput   = document.getElementById('targetInput');
+  const targetHint    = document.getElementById('targetHint');
+  const targetDisplay = document.getElementById('targetDisplay');
+  const ringProgress  = document.getElementById('ringProgress');
+  const flash         = document.getElementById('flash');
+  const btnStart      = document.getElementById('btnStart');
+  const btnPause      = document.getElementById('btnPause');
+  const btnStop       = document.getElementById('btnStop');
+  const permOverlay   = document.getElementById('permOverlay');
+  const grantBtn      = document.getElementById('grantBtn');
+  const permErr       = document.getElementById('permErr');
+
+  const RING_CIRC = 2 * Math.PI * 88; // ≈553
+
+  // ── State ────────────────────────────────────────────────────────────
+  let audioCtx = null;
+  let analyser = null;
+  let micStream = null;
+  let rafId = null;
+
+  let state = 'idle'; // idle | running | paused | done
+  let confirmedCount = 0;
+  let hasPending = false;          // one unconfirmed last-hit pending
+  let pendingTimer = null;         // timeout to discard last pending hit
+  let lastHitTime = 0;
+  let peakState = false;           // currently above threshold?
+  let targetReached = false;
+
+  const SILENCE_TIMEOUT_MS = 1800; // discard pending hit after this silence
+  const MIN_HIT_INTERVAL_MS = 250; // debounce: min ms between valid hits
+  const SMOOTH = 0.25;             // RMS smoothing factor
+  let smoothedRMS = 0;
+
+  // ── Threshold (from slider, 0‥1) ────────────────────────────────────
+  function getThreshold() {
+    return parseFloat(threshSlider.value) / 100;
+  }
+
+  // ── Display ──────────────────────────────────────────────────────────
+  function getDisplayCount() {
+    return confirmedCount + (hasPending ? 1 : 0);
+  }
+
+  function refreshDisplay() {
+    const n = getDisplayCount();
+    countDisplay.textContent = n;
+
+    const target = parseInt(targetInput.value, 10) || 0;
+    const isComplete = target > 0 && n >= target;
+
+    countDisplay.classList.toggle('pending', hasPending && !isComplete);
+    countDisplay.classList.toggle('complete', isComplete);
+
+    if (target > 0) {
+      targetHint.style.display = '';
+      targetDisplay.textContent = target;
+      const pct = Math.min(n / target, 1);
+      ringProgress.style.strokeDashoffset = RING_CIRC * (1 - pct);
+      ringProgress.classList.toggle('complete', isComplete);
+    } else {
+      targetHint.style.display = 'none';
+      ringProgress.style.strokeDashoffset = RING_CIRC;
+      ringProgress.classList.remove('complete');
+    }
+  }
+
+  function setStatus(s) {
+    statusDot.className = 'dot ' + s;
+    const labels = { idle: '待機中', running: '偵測中…', paused: '已暫停', done: '已結束' };
+    statusText.textContent = labels[s] || s;
+  }
+
+  function updateButtons() {
+    btnStart.disabled = (state === 'running' || state === 'done');
+    btnPause.disabled = (state !== 'running');
+    btnStop.disabled  = (state === 'idle' || state === 'done');
+
+    btnStart.textContent = state === 'paused' ? '繼續' : '開始';
+  }
+
+  // ── Bell sound (Web Audio API synthesis) ────────────────────────────
+  function playBell() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const t = ctx.currentTime;
+
+      function tone(freq, gain, decay) {
+        const osc = ctx.createOscillator();
+        const env = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        env.gain.setValueAtTime(gain, t);
+        env.gain.exponentialRampToValueAtTime(0.001, t + decay);
+        osc.connect(env);
+        env.connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + decay);
+      }
+
+      // Bell chord: fundamental + harmonics
+      tone(880,  0.5, 2.5);
+      tone(1760, 0.3, 1.8);
+      tone(2640, 0.2, 1.2);
+      tone(1174, 0.25, 2.0); // add D6
+      setTimeout(() => ctx.close(), 3500);
+    } catch (e) {
+      console.warn('Bell synthesis failed', e);
+    }
+  }
+
+  // ── Flash animation ──────────────────────────────────────────────────
+  function doFlash() {
+    flash.classList.add('show');
+    setTimeout(() => flash.classList.remove('show'), 100);
+  }
+
+  // ── Pending hit management ───────────────────────────────────────────
+  // A "pending" hit = the most recent detected rope-hit that has NOT yet
+  // been confirmed by a subsequent hit. If silence persists beyond
+  // SILENCE_TIMEOUT_MS the pending hit is discarded ("最後一聲不算").
+
+  function schedulePendingTimeout() {
+    clearTimeout(pendingTimer);
+    pendingTimer = setTimeout(() => {
+      if (state === 'running' && hasPending) {
+        // Still running but rope seems to have stopped — discard last hit
+        hasPending = false;
+        refreshDisplay();
+      }
+    }, SILENCE_TIMEOUT_MS);
+  }
+
+  function registerHit() {
+    const now = Date.now();
+    if (now - lastHitTime < MIN_HIT_INTERVAL_MS) return; // debounce
+    lastHitTime = now;
+
+    // Confirm the previously pending hit (if any)
+    if (hasPending) {
+      confirmedCount++;
+    }
+    // New pending hit
+    hasPending = true;
+
+    const target = parseInt(targetInput.value, 10) || 0;
+    if (target > 0 && getDisplayCount() >= target && !targetReached) {
+      targetReached = true;
+      playBell();
+    }
+
+    doFlash();
+    refreshDisplay();
+    schedulePendingTimeout();
+  }
+
+  // ── Audio analysis loop ──────────────────────────────────────────────
+  function analysisLoop() {
+    if (state !== 'running') return;
+
+    const bufferLength = analyser.fftSize;
+    const dataArray = new Float32Array(bufferLength);
+    analyser.getFloatTimeDomainData(dataArray);
+
+    // Compute RMS
+    let sumSq = 0;
+    for (let i = 0; i < bufferLength; i++) sumSq += dataArray[i] * dataArray[i];
+    const rms = Math.sqrt(sumSq / bufferLength);
+
+    // Smooth RMS for display
+    smoothedRMS = smoothedRMS + SMOOTH * (rms - smoothedRMS);
+    const pct = Math.min(smoothedRMS * 400, 100); // scale for display
+    meterBar.style.width = pct + '%';
+    meterVal.textContent = Math.round(pct) + '%';
+
+    // Peak detector: rising edge crosses threshold
+    const thresh = getThreshold();
+    const isAbove = rms > thresh;
+    if (isAbove && !peakState) {
+      // Rising edge — register hit
+      registerHit();
+    }
+    peakState = isAbove;
+
+    rafId = requestAnimationFrame(analysisLoop);
+  }
+
+  // ── Mic setup ────────────────────────────────────────────────────────
+  async function setupAudio() {
+    if (audioCtx) return true; // already set up
+    try {
+      micStream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+      });
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 1024;
+      analyser.smoothingTimeConstant = 0;
+      const source = audioCtx.createMediaStreamSource(micStream);
+      source.connect(analyser);
+      return true;
+    } catch (e) {
+      console.error('Mic error', e);
+      return false;
+    }
+  }
+
+  // ── Flush pending on pause/stop ──────────────────────────────────────
+  // Per spec: last unconfirmed hit is discarded when counting stops.
+  function flushPending() {
+    clearTimeout(pendingTimer);
+    hasPending = false;
+  }
+
+  // ── Button handlers ──────────────────────────────────────────────────
+  btnStart.addEventListener('click', async () => {
+    if (state === 'idle' || state === 'done') {
+      // Reset
+      confirmedCount = 0;
+      hasPending = false;
+      peakState = false;
+      smoothedRMS = 0;
+      lastHitTime = 0;
+      targetReached = false;
+      clearTimeout(pendingTimer);
+      refreshDisplay();
+    }
+
+    if (!audioCtx) {
+      // Need to set up audio — show loading state briefly
+      btnStart.disabled = true;
+      btnStart.textContent = '等待中…';
+      const ok = await setupAudio();
+      if (!ok) {
+        permErr.style.display = '';
+        permOverlay.classList.remove('hidden');
+        btnStart.disabled = false;
+        btnStart.textContent = '開始';
+        return;
+      }
+    }
+
+    state = 'running';
+    setStatus('running');
+    updateButtons();
+    rafId = requestAnimationFrame(analysisLoop);
+  });
+
+  btnPause.addEventListener('click', () => {
+    if (state !== 'running') return;
+    state = 'paused';
+    cancelAnimationFrame(rafId);
+    flushPending(); // discard last unconfirmed hit
+    refreshDisplay();
+    setStatus('paused');
+    updateButtons();
+    meterBar.style.width = '0%';
+    meterVal.textContent = '0%';
+  });
+
+  btnStop.addEventListener('click', () => {
+    if (state === 'idle') return;
+    cancelAnimationFrame(rafId);
+    flushPending(); // discard last unconfirmed hit
+    state = 'done';
+    refreshDisplay();
+    setStatus('done');
+    updateButtons();
+    meterBar.style.width = '0%';
+    meterVal.textContent = '0%';
+    peakState = false;
+    smoothedRMS = 0;
+  });
+
+  // ── Slider ────────────────────────────────────────────────────────────
+  threshSlider.addEventListener('input', () => {
+    threshLabel.textContent = threshSlider.value + '%';
+  });
+
+  // ── Target input ─────────────────────────────────────────────────────
+  targetInput.addEventListener('input', () => {
+    targetReached = false; // allow bell again if target changed
+    refreshDisplay();
+  });
+
+  // ── Permission overlay ───────────────────────────────────────────────
+  grantBtn.addEventListener('click', async () => {
+    grantBtn.textContent = '請求中…';
+    grantBtn.disabled = true;
+    const ok = await setupAudio();
+    if (ok) {
+      permOverlay.classList.add('hidden');
+    } else {
+      permErr.style.display = '';
+      grantBtn.textContent = '授予麥克風權限';
+      grantBtn.disabled = false;
+    }
+  });
+
+  // Check if browser supports getUserMedia
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    permErr.textContent = '您的瀏覽器不支援麥克風功能，請使用 Chrome 或 Safari。';
+    permErr.style.display = '';
+    grantBtn.disabled = true;
+  }
+
+  // ── Init ─────────────────────────────────────────────────────────────
+  setStatus('idle');
+  updateButtons();
+  refreshDisplay();
+})();
+</script>
+</body>
+</html>
