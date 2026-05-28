@@ -8,48 +8,65 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #0d0f14;
-      --surface: #161921;
-      --card: #1e2230;
-      --accent: #00e5a0;
+      --bg:      #0d0f14;
+      --card:    #1e2230;
+      --accent:  #00e5a0;
       --accent2: #00b8ff;
-      --warn: #ffbe00;
-      --danger: #ff4757;
-      --text: #e8eaf0;
-      --muted: #6b7280;
-      --radius: 16px;
-    }
-
-    html, body {
-      height: 100%;
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      overflow-x: hidden;
+      --warn:    #ffbe00;
+      --danger:  #ff4757;
+      --text:    #e8eaf0;
+      --muted:   #6b7280;
     }
 
     body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
       min-height: 100vh;
-      padding: 20px 16px 40px;
-      gap: 20px;
+      padding: 20px 16px 48px;
+      gap: 18px;
     }
 
     h1 {
-      font-size: 1.3rem;
-      font-weight: 700;
-      letter-spacing: 0.12em;
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: .1em;
       color: var(--accent);
-      text-transform: uppercase;
       text-shadow: 0 0 20px rgba(0,229,160,.4);
     }
 
-    /* ── Count display ── */
+    /* ── Alert bar (always visible when there's a message) ── */
+    #alertBar {
+      display: none;
+      width: min(340px, 94vw);
+      background: rgba(255,71,87,.18);
+      border: 1.5px solid rgba(255,71,87,.5);
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: .88rem;
+      color: #ff8a95;
+      line-height: 1.65;
+      text-align: center;
+    }
+    #alertBar.info {
+      background: rgba(0,184,255,.12);
+      border-color: rgba(0,184,255,.4);
+      color: #7dd9ff;
+    }
+    #alertBar code {
+      background: rgba(255,255,255,.1);
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-size: .82rem;
+    }
+
+    /* ── Ring display ── */
     .display-wrap {
       position: relative;
-      width: min(320px, 90vw);
+      width: min(300px, 88vw);
       aspect-ratio: 1;
       display: flex;
       align-items: center;
@@ -57,599 +74,502 @@
     }
 
     .ring-svg {
-      position: absolute;
-      top: 0; left: 0;
+      position: absolute; inset: 0;
       width: 100%; height: 100%;
       transform: rotate(-90deg);
     }
-
-    .ring-bg { fill: none; stroke: var(--card); stroke-width: 10; }
-
-    .ring-progress {
-      fill: none;
-      stroke: var(--accent);
-      stroke-width: 10;
-      stroke-linecap: round;
-      transition: stroke-dashoffset 0.4s ease, stroke 0.3s;
-    }
-    .ring-progress.complete { stroke: var(--warn); }
+    .ring-bg       { fill: none; stroke: var(--card); stroke-width: 10; }
+    .ring-progress { fill: none; stroke: var(--accent); stroke-width: 10; stroke-linecap: round;
+                     transition: stroke-dashoffset .4s ease, stroke .3s; }
+    .ring-progress.gold { stroke: var(--warn); }
 
     .display-inner {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      z-index: 1;
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      z-index: 1; width: 80%; text-align: center;
     }
 
-    .count-number {
-      font-size: clamp(72px, 22vw, 120px);
+    #countNum {
+      font-size: clamp(68px, 20vw, 114px);
       font-weight: 900;
       line-height: 1;
       color: var(--accent);
-      text-shadow: 0 0 30px rgba(0,229,160,.5);
-      transition: color 0.2s, text-shadow 0.2s;
+      text-shadow: 0 0 28px rgba(0,229,160,.45);
       font-variant-numeric: tabular-nums;
-      letter-spacing: -2px;
+      transition: color .2s, text-shadow .2s;
     }
-    .count-number.pending {
-      color: var(--warn);
-      text-shadow: 0 0 30px rgba(255,190,0,.5);
+    #countNum.pending  { color: var(--warn);   text-shadow: 0 0 28px rgba(255,190,0,.5); }
+    #countNum.complete { color: var(--warn);   text-shadow: 0 0 36px rgba(255,190,0,.8);
+                         animation: pulse .6s ease infinite alternate; }
+
+    /* centre message (replaces counter when there's an issue) */
+    #centreMsg {
+      display: none;
+      font-size: .78rem;
+      color: #ff8a95;
+      line-height: 1.6;
+      padding: 0 8px;
     }
-    .count-number.complete {
-      color: var(--warn);
-      text-shadow: 0 0 40px rgba(255,190,0,.8);
-      animation: pulse 0.6s ease infinite alternate;
+    #centreMsg.info { color: #7dd9ff; }
+
+    @keyframes pulse { to { transform: scale(1.05); } }
+
+    .count-label { font-size: .8rem; color: var(--muted); letter-spacing: .14em; text-transform: uppercase; }
+    #targetHint  { font-size: .78rem; color: var(--muted); margin-top: 2px; display: none; }
+    #targetHint span { color: var(--warn); font-weight: 700; }
+
+    /* ── Status ── */
+    #statusRow {
+      display: flex; align-items: center; gap: 8px;
+      font-size: .85rem; color: var(--muted); min-height: 22px;
     }
-
-    @keyframes pulse {
-      from { transform: scale(1); }
-      to   { transform: scale(1.04); }
-    }
-
-    .count-label { font-size: 0.85rem; color: var(--muted); letter-spacing: 0.15em; text-transform: uppercase; }
-    .target-hint { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
-    .target-hint span { color: var(--warn); font-weight: 700; }
-
-    /* ── Status bar ── */
-    .status-bar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.85rem;
-      color: var(--muted);
-      min-height: 24px;
-    }
-
-    .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
-    .dot.active  { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: blink 1s step-start infinite; }
-    .dot.paused  { background: var(--warn);   box-shadow: 0 0 8px var(--warn); }
-    .dot.done    { background: var(--danger);  box-shadow: 0 0 8px var(--danger); }
-
-    @keyframes blink { 50% { opacity: 0.2; } }
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+    .dot.on   { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: blink 1s step-start infinite; }
+    .dot.hold { background: var(--warn);   box-shadow: 0 0 8px var(--warn); }
+    .dot.off  { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+    @keyframes blink { 50% { opacity: .2; } }
 
     /* ── Volume meter ── */
-    .meter-wrap { width: min(320px, 90vw); display: flex; flex-direction: column; gap: 6px; }
-
-    .meter-row { display: flex; align-items: center; gap: 10px; font-size: 0.75rem; color: var(--muted); }
-
-    .meter-bar-bg { flex: 1; height: 8px; background: var(--card); border-radius: 4px; overflow: hidden; }
-
-    .meter-bar {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, var(--accent2), var(--accent));
-      border-radius: 4px;
-      transition: width 0.05s;
+    .meter-row {
+      display: flex; align-items: center; gap: 10px;
+      width: min(300px, 88vw); font-size: .75rem; color: var(--muted);
     }
+    .bar-bg { flex: 1; height: 7px; background: var(--card); border-radius: 4px; overflow: hidden; }
+    #meterBar { height: 100%; width: 0%; border-radius: 4px;
+                background: linear-gradient(90deg, var(--accent2), var(--accent));
+                transition: width .05s; }
 
-    /* ── Settings ── */
-    .settings-card {
-      width: min(320px, 90vw);
+    /* ── Settings card ── */
+    .card {
+      width: min(300px, 88vw);
       background: var(--card);
-      border-radius: var(--radius);
+      border-radius: 16px;
       padding: 18px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
+      display: flex; flex-direction: column; gap: 16px;
     }
+    .card-title { font-size: .72rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
 
-    .settings-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
+    .row     { display: flex; flex-direction: column; gap: 8px; }
+    .row-hd  { display: flex; justify-content: space-between; font-size: .9rem; }
+    .row-hd em { color: var(--accent); font-style: normal; font-weight: 700; }
 
-    .setting-row { display: flex; flex-direction: column; gap: 8px; }
-
-    .setting-label { display: flex; justify-content: space-between; font-size: 0.9rem; }
-    .setting-label span:last-child { color: var(--accent); font-weight: 700; min-width: 36px; text-align: right; }
-
-    input[type="range"] {
-      -webkit-appearance: none;
-      width: 100%; height: 6px;
-      border-radius: 3px;
-      background: var(--surface);
-      outline: none;
-      cursor: pointer;
+    input[type=range] {
+      -webkit-appearance: none; width: 100%; height: 6px;
+      background: #0d0f14; border-radius: 3px; outline: none; cursor: pointer;
     }
-    input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 20px; height: 20px;
-      border-radius: 50%;
-      background: var(--accent);
-      box-shadow: 0 0 8px rgba(0,229,160,.5);
-      cursor: pointer;
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%;
+      background: var(--accent); box-shadow: 0 0 8px rgba(0,229,160,.5); cursor: pointer;
     }
-    input[type="range"]::-moz-range-thumb {
+    input[type=range]::-moz-range-thumb {
       width: 20px; height: 20px; border-radius: 50%;
       background: var(--accent); border: none; cursor: pointer;
     }
 
-    .target-input-row { display: flex; gap: 10px; align-items: center; }
-
-    input[type="number"] {
-      background: var(--surface);
-      border: 1.5px solid var(--muted);
-      border-radius: 8px;
-      color: var(--text);
-      font-size: 1rem;
-      padding: 8px 12px;
-      width: 110px;
-      outline: none;
-      text-align: center;
-      transition: border-color 0.2s;
+    .target-row { display: flex; align-items: center; gap: 10px; }
+    input[type=number] {
+      background: #0d0f14; border: 1.5px solid var(--muted);
+      border-radius: 8px; color: var(--text); font-size: 1rem;
+      padding: 8px 12px; width: 110px; outline: none; text-align: center;
+      transition: border-color .2s;
     }
-    input[type="number"]:focus { border-color: var(--accent); }
-    input[type="number"]::-webkit-inner-spin-button,
-    input[type="number"]::-webkit-outer-spin-button { opacity: 1; }
-
-    .target-note { font-size: 0.78rem; color: var(--muted); }
+    input[type=number]:focus { border-color: var(--accent); }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { opacity: 1; }
+    .note { font-size: .78rem; color: var(--muted); }
 
     /* ── Buttons ── */
-    .btn-row { display: flex; gap: 12px; width: min(320px, 90vw); }
-
+    .btn-row { display: flex; gap: 12px; width: min(300px, 88vw); }
     .btn {
-      flex: 1;
-      padding: 16px 8px;
-      border: none;
-      border-radius: 14px;
-      font-size: 1rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: transform 0.12s, opacity 0.2s, box-shadow 0.2s;
-      letter-spacing: 0.05em;
-      -webkit-tap-highlight-color: transparent;
+      flex: 1; padding: 17px 4px; border: none; border-radius: 14px;
+      font-size: 1rem; font-weight: 700; cursor: pointer;
+      transition: transform .12s, box-shadow .2s, opacity .2s;
+      letter-spacing: .04em; -webkit-tap-highlight-color: transparent;
     }
-    .btn:active { transform: scale(0.95); }
-    .btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+    .btn:active  { transform: scale(.95); }
+    .btn:disabled { opacity: .3; cursor: not-allowed; transform: none; }
+    .btn-go   { background: var(--accent);  color: #0d0f14; box-shadow: 0 0 20px rgba(0,229,160,.3); }
+    .btn-hold { background: var(--warn);    color: #0d0f14; box-shadow: 0 0 20px rgba(255,190,0,.25); }
+    .btn-end  { background: var(--danger);  color: #fff;    box-shadow: 0 0 20px rgba(255,71,87,.2); }
 
-    .btn-start { background: var(--accent); color: #0d0f14; box-shadow: 0 0 20px rgba(0,229,160,.35); }
-    .btn-start:not(:disabled):hover { box-shadow: 0 0 28px rgba(0,229,160,.55); }
-
-    .btn-pause { background: var(--warn); color: #0d0f14; box-shadow: 0 0 20px rgba(255,190,0,.3); }
-    .btn-pause:not(:disabled):hover { box-shadow: 0 0 28px rgba(255,190,0,.5); }
-
-    .btn-stop  { background: var(--danger); color: #fff; box-shadow: 0 0 20px rgba(255,71,87,.25); }
-    .btn-stop:not(:disabled):hover { box-shadow: 0 0 28px rgba(255,71,87,.45); }
-
-    /* ── Error banner ── */
-    .error-banner {
-      display: none;
-      width: min(320px, 90vw);
-      background: rgba(255,71,87,.15);
-      border: 1px solid rgba(255,71,87,.4);
-      border-radius: 12px;
-      padding: 14px 16px;
-      font-size: 0.85rem;
-      color: #ff8a95;
-      line-height: 1.6;
-      text-align: center;
+    /* ── Flash ── */
+    #flash {
+      position: fixed; inset: 0; pointer-events: none;
+      opacity: 0; background: rgba(0,229,160,.12); transition: opacity .08s;
     }
-    .error-banner.visible { display: block; }
-    .error-banner a { color: var(--accent2); }
-
-    /* ── Flash overlay ── */
-    .flash {
-      position: fixed; inset: 0;
-      pointer-events: none;
-      opacity: 0;
-      background: rgba(0,229,160,.12);
-      transition: opacity 0.08s;
-    }
-    .flash.show { opacity: 1; }
+    #flash.on { opacity: 1; }
   </style>
 </head>
 <body>
 
-  <div class="flash" id="flash"></div>
+<div id="flash"></div>
 
-  <h1>🪢 跳繩計數器</h1>
+<h1>🪢 跳繩計數器</h1>
 
-  <!-- Main counter ring -->
-  <div class="display-wrap">
-    <svg class="ring-svg" viewBox="0 0 200 200">
-      <circle class="ring-bg" cx="100" cy="100" r="88"/>
-      <circle class="ring-progress" id="ringProgress" cx="100" cy="100" r="88"
-              stroke-dasharray="553" stroke-dashoffset="553"/>
-    </svg>
-    <div class="display-inner">
-      <div class="count-number" id="countDisplay">0</div>
-      <div class="count-label">次數</div>
-      <div class="target-hint" id="targetHint" style="display:none">
-        目標：<span id="targetDisplay">0</span> 次
-      </div>
+<!-- Alert bar: visible errors / warnings -->
+<div id="alertBar"></div>
+
+<!-- Counter ring -->
+<div class="display-wrap">
+  <svg class="ring-svg" viewBox="0 0 200 200">
+    <circle class="ring-bg"       cx="100" cy="100" r="88"/>
+    <circle class="ring-progress" cx="100" cy="100" r="88" id="ring"
+            stroke-dasharray="553" stroke-dashoffset="553"/>
+  </svg>
+  <div class="display-inner">
+    <div id="countNum">0</div>
+    <!-- centre message replaces number on error -->
+    <div id="centreMsg"></div>
+    <div class="count-label">次數</div>
+    <div id="targetHint">目標：<span id="targetNum">0</span> 次</div>
+  </div>
+</div>
+
+<!-- Status -->
+<div id="statusRow">
+  <div class="dot" id="dot"></div>
+  <span id="statusTxt">待機中</span>
+</div>
+
+<!-- Volume meter -->
+<div class="meter-row">
+  <span>音量</span>
+  <div class="bar-bg"><div id="meterBar"></div></div>
+  <span id="meterPct">0%</span>
+</div>
+
+<!-- Settings -->
+<div class="card">
+  <div class="card-title">設定</div>
+
+  <div class="row">
+    <div class="row-hd">
+      <span>靈敏度（觸發閾值）</span>
+      <em id="threshVal">15%</em>
+    </div>
+    <input type="range" id="thresh" min="3" max="60" value="15">
+  </div>
+
+  <div class="row">
+    <div class="row-hd"><span>目標次數</span></div>
+    <div class="target-row">
+      <input type="number" id="targetIn" min="0" max="9999" value="0" placeholder="0 = 不限">
+      <span class="note">0 = 不限制</span>
     </div>
   </div>
+</div>
 
-  <!-- Status indicator -->
-  <div class="status-bar">
-    <div class="dot" id="statusDot"></div>
-    <span id="statusText">待機中，按「開始」並允許麥克風</span>
-  </div>
-
-  <!-- Volume meter -->
-  <div class="meter-wrap">
-    <div class="meter-row">
-      <span>音量</span>
-      <div class="meter-bar-bg">
-        <div class="meter-bar" id="meterBar"></div>
-      </div>
-      <span id="meterVal">0%</span>
-    </div>
-  </div>
-
-  <!-- Settings -->
-  <div class="settings-card">
-    <div class="settings-title">設定</div>
-
-    <div class="setting-row">
-      <div class="setting-label">
-        <span>靈敏度（觸發閾值）</span>
-        <span id="threshLabel">15%</span>
-      </div>
-      <input type="range" id="threshSlider" min="3" max="60" value="15" step="1">
-    </div>
-
-    <div class="setting-row">
-      <div class="setting-label">
-        <span>目標次數</span>
-      </div>
-      <div class="target-input-row">
-        <input type="number" id="targetInput" min="0" max="9999" value="0" placeholder="0 = 不限">
-        <span class="target-note">0 為不限制</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Control buttons -->
-  <div class="btn-row">
-    <button class="btn btn-start" id="btnStart">開始</button>
-    <button class="btn btn-pause" id="btnPause" disabled>暫停</button>
-    <button class="btn btn-stop"  id="btnStop"  disabled>結束</button>
-  </div>
-
-  <!-- Inline error message (shown only when mic access fails) -->
-  <div class="error-banner" id="errorBanner"></div>
+<!-- Buttons -->
+<div class="btn-row">
+  <button class="btn btn-go"   id="btnGo">開始</button>
+  <button class="btn btn-hold" id="btnHold" disabled>暫停</button>
+  <button class="btn btn-end"  id="btnEnd"  disabled>結束</button>
+</div>
 
 <script>
-(function () {
-  'use strict';
+/* ── Globals ── */
+var audioCtx, analyser, rafId;
+var state = 'idle';
+var confirmed = 0, hasPending = false, pendingTimer = null;
+var lastHit = 0, aboveThresh = false, targetDone = false, rmsSmooth = 0;
+var SILENCE = 1800, DEBOUNCE = 250, SMOOTH = 0.25;
+var CIRC = 553;
 
-  // ── DOM refs ─────────────────────────────────────────────────────────
-  const countDisplay  = document.getElementById('countDisplay');
-  const statusDot     = document.getElementById('statusDot');
-  const statusText    = document.getElementById('statusText');
-  const meterBar      = document.getElementById('meterBar');
-  const meterVal      = document.getElementById('meterVal');
-  const threshSlider  = document.getElementById('threshSlider');
-  const threshLabel   = document.getElementById('threshLabel');
-  const targetInput   = document.getElementById('targetInput');
-  const targetHint    = document.getElementById('targetHint');
-  const targetDisplay = document.getElementById('targetDisplay');
-  const ringProgress  = document.getElementById('ringProgress');
-  const flash         = document.getElementById('flash');
-  const btnStart      = document.getElementById('btnStart');
-  const btnPause      = document.getElementById('btnPause');
-  const btnStop       = document.getElementById('btnStop');
-  const errorBanner   = document.getElementById('errorBanner');
+/* ── DOM ── */
+var elNum     = document.getElementById('countNum');
+var elCentre  = document.getElementById('centreMsg');
+var elDot     = document.getElementById('dot');
+var elStatus  = document.getElementById('statusTxt');
+var elMeter   = document.getElementById('meterBar');
+var elMeterPc = document.getElementById('meterPct');
+var elThresh  = document.getElementById('thresh');
+var elThreshV = document.getElementById('threshVal');
+var elTarget  = document.getElementById('targetIn');
+var elTargetH = document.getElementById('targetHint');
+var elTargetN = document.getElementById('targetNum');
+var elRing    = document.getElementById('ring');
+var elFlash   = document.getElementById('flash');
+var elAlert   = document.getElementById('alertBar');
+var btnGo     = document.getElementById('btnGo');
+var btnHold   = document.getElementById('btnHold');
+var btnEnd    = document.getElementById('btnEnd');
 
-  const RING_CIRC = 2 * Math.PI * 88; // ≈ 553
+/* ── Alert helpers ── */
+function showAlert(html, type) {
+  elAlert.innerHTML = html;
+  elAlert.className = type === 'info' ? 'info' : '';
+  elAlert.style.display = 'block';
+}
+function hideAlert() { elAlert.style.display = 'none'; }
 
-  // ── Audio state ───────────────────────────────────────────────────────
-  let audioCtx  = null;
-  let analyser  = null;
-  let micStream = null;
-  let rafId     = null;
+/* ── Centre message (inside ring) ── */
+function showCentre(html, type) {
+  elNum.style.display = 'none';
+  elCentre.innerHTML  = html;
+  elCentre.className  = type === 'info' ? 'info' : '';
+  elCentre.style.display = 'block';
+}
+function hideCentre() {
+  elCentre.style.display = 'none';
+  elNum.style.display    = '';
+}
 
-  // ── Counter state ─────────────────────────────────────────────────────
-  let state          = 'idle'; // idle | running | paused | done
-  let confirmedCount = 0;
-  let hasPending     = false;
-  let pendingTimer   = null;
-  let lastHitTime    = 0;
-  let peakState      = false;
-  let targetReached  = false;
-  let smoothedRMS    = 0;
+/* ── Status ── */
+function setStatus(s) {
+  var cls = { idle:'', running:'on', paused:'hold', done:'off' };
+  elDot.className = 'dot ' + (cls[s] || '');
+  var lbl = { idle:'待機中', running:'偵測中…', paused:'已暫停', done:'已結束' };
+  elStatus.textContent = lbl[s] || s;
+}
 
-  const SILENCE_MS   = 1800; // ms of silence before discarding last hit
-  const DEBOUNCE_MS  = 250;  // min ms between registered hits
-  const SMOOTH       = 0.25;
+/* ── Buttons ── */
+function syncBtns() {
+  btnGo.disabled   = (state === 'running' || state === 'done');
+  btnHold.disabled = (state !== 'running');
+  btnEnd.disabled  = (state === 'idle' || state === 'done');
+  btnGo.textContent = state === 'paused' ? '繼續' : '開始';
+}
 
-  // ── Helpers ───────────────────────────────────────────────────────────
-  function getThreshold() { return parseFloat(threshSlider.value) / 100; }
+/* ── Display ── */
+function display() {
+  var n = confirmed + (hasPending ? 1 : 0);
+  var tgt = parseInt(elTarget.value, 10) || 0;
+  var done = tgt > 0 && n >= tgt;
 
-  function getDisplayCount() { return confirmedCount + (hasPending ? 1 : 0); }
+  elNum.textContent = n;
+  elNum.className   = done ? 'complete' : hasPending ? 'pending' : '';
 
-  function showError(msg) {
-    errorBanner.innerHTML = msg;
-    errorBanner.classList.add('visible');
+  if (tgt > 0) {
+    elTargetH.style.display = '';
+    elTargetN.textContent   = tgt;
+    elRing.style.strokeDashoffset = CIRC * (1 - Math.min(n / tgt, 1));
+    elRing.className = 'ring-progress' + (done ? ' gold' : '');
+  } else {
+    elTargetH.style.display = 'none';
+    elRing.style.strokeDashoffset = CIRC;
+    elRing.className = 'ring-progress';
   }
+}
 
-  function clearError() {
-    errorBanner.classList.remove('visible');
-  }
+/* ── Bell ── */
+function bell() {
+  try {
+    var c = new (window.AudioContext || window.webkitAudioContext)();
+    var t = c.currentTime;
+    [[880,.5,2.5],[1760,.3,1.8],[2640,.2,1.2],[1174,.25,2]].forEach(function(x) {
+      var o = c.createOscillator(), g = c.createGain();
+      o.type = 'sine'; o.frequency.value = x[0];
+      g.gain.setValueAtTime(x[1], t);
+      g.gain.exponentialRampToValueAtTime(.001, t + x[2]);
+      o.connect(g); g.connect(c.destination);
+      o.start(t); o.stop(t + x[2]);
+    });
+    setTimeout(function(){ c.close(); }, 3500);
+  } catch(e) {}
+}
 
-  // ── Display ───────────────────────────────────────────────────────────
-  function refreshDisplay() {
-    const n      = getDisplayCount();
-    const target = parseInt(targetInput.value, 10) || 0;
-    const done   = target > 0 && n >= target;
+function flash() {
+  elFlash.className = 'on';
+  setTimeout(function(){ elFlash.className = ''; }, 100);
+}
 
-    countDisplay.textContent = n;
-    countDisplay.classList.toggle('pending',  hasPending && !done);
-    countDisplay.classList.toggle('complete', done);
+/* ── Hit logic ── */
+function clearPending() { clearTimeout(pendingTimer); hasPending = false; }
 
-    if (target > 0) {
-      targetHint.style.display = '';
-      targetDisplay.textContent = target;
-      const pct = Math.min(n / target, 1);
-      ringProgress.style.strokeDashoffset = RING_CIRC * (1 - pct);
-      ringProgress.classList.toggle('complete', done);
-    } else {
-      targetHint.style.display = 'none';
-      ringProgress.style.strokeDashoffset = RING_CIRC;
-      ringProgress.classList.remove('complete');
-    }
-  }
+function schedSilence() {
+  clearTimeout(pendingTimer);
+  pendingTimer = setTimeout(function() {
+    if (state === 'running' && hasPending) { hasPending = false; display(); }
+  }, SILENCE);
+}
 
-  function setStatus(s) {
-    statusDot.className = 'dot ' + s;
-    const MAP = {
-      idle:    '待機中，按「開始」並允許麥克風',
-      running: '偵測中…',
-      paused:  '已暫停',
-      done:    '已結束'
-    };
-    statusText.textContent = MAP[s] || s;
-  }
+function hit() {
+  var now = Date.now();
+  if (now - lastHit < DEBOUNCE) return;
+  lastHit = now;
+  if (hasPending) confirmed++;
+  hasPending = true;
+  var tgt = parseInt(elTarget.value, 10) || 0;
+  if (tgt > 0 && confirmed + 1 >= tgt && !targetDone) { targetDone = true; bell(); }
+  flash(); display(); schedSilence();
+}
 
-  function updateButtons() {
-    btnStart.disabled = (state === 'running' || state === 'done');
-    btnPause.disabled = (state !== 'running');
-    btnStop.disabled  = (state === 'idle'    || state === 'done');
-    btnStart.textContent = state === 'paused' ? '繼續' : '開始';
-  }
+/* ── Analysis loop ── */
+function loop() {
+  if (state !== 'running') return;
+  var buf = new Float32Array(analyser.fftSize);
+  analyser.getFloatTimeDomainData(buf);
+  var s = 0;
+  for (var i = 0; i < buf.length; i++) s += buf[i] * buf[i];
+  var rms = Math.sqrt(s / buf.length);
+  rmsSmooth += SMOOTH * (rms - rmsSmooth);
+  var pct = Math.min(rmsSmooth * 400, 100);
+  elMeter.style.width   = pct + '%';
+  elMeterPc.textContent = Math.round(pct) + '%';
+  var thresh = parseFloat(elThresh.value) / 100;
+  var above  = rms > thresh;
+  if (above && !aboveThresh) hit();
+  aboveThresh = above;
+  rafId = requestAnimationFrame(loop);
+}
 
-  // ── Bell (synthesised) ────────────────────────────────────────────────
-  function playBell() {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const t   = ctx.currentTime;
-      [[880,.5,2.5],[1760,.3,1.8],[2640,.2,1.2],[1174,.25,2.0]].forEach(([f,g,d]) => {
-        const osc = ctx.createOscillator();
-        const env = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.value = f;
-        env.gain.setValueAtTime(g, t);
-        env.gain.exponentialRampToValueAtTime(0.001, t + d);
-        osc.connect(env);
-        env.connect(ctx.destination);
-        osc.start(t);
-        osc.stop(t + d);
-      });
-      setTimeout(() => ctx.close(), 3500);
-    } catch(e) {}
-  }
+/* ── Mic setup ── */
+function doGetUserMedia(constraints, cb) {
+  navigator.mediaDevices.getUserMedia(constraints)
+    .then(function(stream) { cb(null, stream); })
+    .catch(function(err)   { cb(err, null); });
+}
 
-  function doFlash() {
-    flash.classList.add('show');
-    setTimeout(() => flash.classList.remove('show'), 100);
-  }
-
-  // ── Hit registration ──────────────────────────────────────────────────
-  // Each new hit confirms the previous pending one.
-  // If silence > SILENCE_MS, the last pending hit is discarded.
-  function scheduleSilenceTimeout() {
-    clearTimeout(pendingTimer);
-    pendingTimer = setTimeout(() => {
-      if (state === 'running' && hasPending) {
-        hasPending = false;
-        refreshDisplay();
-      }
-    }, SILENCE_MS);
-  }
-
-  function registerHit() {
-    const now = Date.now();
-    if (now - lastHitTime < DEBOUNCE_MS) return;
-    lastHitTime = now;
-
-    if (hasPending) confirmedCount++;
-    hasPending = true;
-
-    const target = parseInt(targetInput.value, 10) || 0;
-    if (target > 0 && getDisplayCount() >= target && !targetReached) {
-      targetReached = true;
-      playBell();
-    }
-
-    doFlash();
-    refreshDisplay();
-    scheduleSilenceTimeout();
-  }
-
-  function flushPending() {
-    clearTimeout(pendingTimer);
-    hasPending = false;
-  }
-
-  // ── Audio analysis loop ───────────────────────────────────────────────
-  function analysisLoop() {
-    if (state !== 'running') return;
-
-    const data = new Float32Array(analyser.fftSize);
-    analyser.getFloatTimeDomainData(data);
-
-    let sumSq = 0;
-    for (let i = 0; i < data.length; i++) sumSq += data[i] * data[i];
-    const rms = Math.sqrt(sumSq / data.length);
-
-    smoothedRMS += SMOOTH * (rms - smoothedRMS);
-    const pct = Math.min(smoothedRMS * 400, 100);
-    meterBar.style.width  = pct + '%';
-    meterVal.textContent  = Math.round(pct) + '%';
-
-    const above = rms > getThreshold();
-    if (above && !peakState) registerHit(); // rising edge
-    peakState = above;
-
-    rafId = requestAnimationFrame(analysisLoop);
-  }
-
-  // ── Mic initialisation ────────────────────────────────────────────────
-  async function setupAudio() {
-    if (audioCtx) return true;
-
-    // Try progressive constraint degradation for maximum compatibility
-    const attempts = [
-      { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } },
-      { audio: true }
-    ];
-
-    let lastErr = null;
-    for (const constraint of attempts) {
-      try {
-        micStream = await navigator.mediaDevices.getUserMedia(constraint);
-        audioCtx  = new (window.AudioContext || window.webkitAudioContext)();
-        analyser  = audioCtx.createAnalyser();
-        analyser.fftSize = 1024;
-        analyser.smoothingTimeConstant = 0;
-        audioCtx.createMediaStreamSource(micStream).connect(analyser);
-        return true;
-      } catch (e) {
-        lastErr = e;
+function startMic(cb) {
+  doGetUserMedia(
+    { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } },
+    function(err, stream) {
+      if (err) {
+        /* fallback: try plain audio:true */
+        doGetUserMedia({ audio: true }, function(err2, stream2) {
+          if (err2) return cb(err2);
+          buildGraph(stream2); cb(null);
+        });
+      } else {
+        buildGraph(stream); cb(null);
       }
     }
+  );
+}
 
-    return lastErr; // return Error object on failure
+function buildGraph(stream) {
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 1024;
+  analyser.smoothingTimeConstant = 0;
+  audioCtx.createMediaStreamSource(stream).connect(analyser);
+}
+
+/* ── Handle start click ── */
+function handleStart() {
+  hideAlert();
+  hideCentre();
+
+  /* Reset on fresh start */
+  if (state === 'idle' || state === 'done') {
+    confirmed = 0; hasPending = false; aboveThresh = false;
+    rmsSmooth = 0; lastHit = 0; targetDone = false;
+    clearTimeout(pendingTimer);
+    display();
   }
 
-  // ── Button: 開始 / 繼續 ───────────────────────────────────────────────
-  btnStart.addEventListener('click', async () => {
-    clearError();
+  /* If already have audio context, just resume */
+  if (audioCtx) {
+    state = 'running';
+    setStatus('running'); syncBtns();
+    rafId = requestAnimationFrame(loop);
+    return;
+  }
 
-    if (state === 'idle' || state === 'done') {
-      confirmedCount = 0;
-      hasPending     = false;
-      peakState      = false;
-      smoothedRMS    = 0;
-      lastHitTime    = 0;
-      targetReached  = false;
-      clearTimeout(pendingTimer);
-      refreshDisplay();
-    }
+  /* Check browser support */
+  if (typeof navigator === 'undefined' ||
+      !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showAlert(
+      '⚠️ 此瀏覽器不支援麥克風 API。<br>' +
+      '請改用 <b>Chrome 60+</b> 或 <b>Safari 11+</b>，<br>' +
+      '並確認頁面以 <b>https://</b> 或 <b>localhost</b> 開啟。',
+      'err'
+    );
+    return;
+  }
 
-    // Check browser support first
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      showError(
-        '您的瀏覽器不支援麥克風 API。<br>' +
-        '請改用 <b>Chrome</b> 或 <b>Safari</b>，' +
-        '並確認頁面透過 <b>https://</b> 或 <b>localhost</b> 開啟（不能是 file://）。'
-      );
+  /* Detect file:// — Chrome blocks getUserMedia on file:// */
+  if (location.protocol === 'file:') {
+    showAlert(
+      '⚠️ 從 <code>file://</code> 開啟時，Chrome 會封鎖麥克風。<br>' +
+      '請改用本機伺服器開啟此檔：<br>' +
+      '<code>python3 -m http.server 8000</code><br>' +
+      '然後在瀏覽器開啟 <code>http://localhost:8000</code>',
+      'err'
+    );
+    return;
+  }
+
+  /* Show immediate feedback — synchronously, before any async */
+  btnGo.disabled    = true;
+  btnGo.textContent = '請求麥克風中…';
+  showCentre('正在請求<br>麥克風權限…', 'info');
+  setStatus('idle');
+
+  startMic(function(err) {
+    hideCentre();
+
+    if (err) {
+      btnGo.disabled    = false;
+      btnGo.textContent = '開始';
+      syncBtns();
+
+      var n = err.name || '';
+      var msg;
+      if (n === 'NotAllowedError' || n === 'PermissionDeniedError') {
+        msg = '🚫 麥克風權限被拒絕。<br>' +
+              '請點擊網址列左側的 🔒 / ⓘ 圖示，<br>' +
+              '將麥克風改為「允許」，<br>' +
+              '重新整理頁面後再按開始。';
+      } else if (n === 'NotFoundError' || n === 'DevicesNotFoundError') {
+        msg = '🔇 找不到麥克風裝置，<br>請確認已連接或啟用麥克風。';
+      } else if (n === 'NotReadableError' || n === 'TrackStartError') {
+        msg = '⚠️ 麥克風被其他應用程式佔用，<br>請關閉其他使用麥克風的程式後再試。';
+      } else {
+        msg = '⚠️ 麥克風啟動失敗：<br>' + (err.message || n || '未知錯誤');
+      }
+      showAlert(msg, 'err');
       return;
     }
 
-    if (!audioCtx) {
-      btnStart.disabled    = true;
-      btnStart.textContent = '請求中…';
-      setStatus('idle');
-
-      const result = await setupAudio();
-      if (result !== true) {
-        // Restore button first
-        btnStart.disabled    = false;
-        btnStart.textContent = '開始';
-        updateButtons();
-
-        const name = result && result.name;
-        if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
-          showError(
-            '麥克風權限被拒絕。<br>' +
-            '請點擊瀏覽器網址列左側的 🔒 或 ⓘ 圖示，<br>' +
-            '將麥克風設為「允許」，然後重新整理頁面再試一次。'
-          );
-        } else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
-          showError('找不到麥克風裝置，請確認已連接麥克風。');
-        } else if (location.protocol === 'file:') {
-          showError(
-            '從本機 file:// 開啟時，多數瀏覽器會封鎖麥克風。<br>' +
-            '請將此檔案放到伺服器（或用 VS Code Live Server、<br>' +
-            '<code>python3 -m http.server</code>）再開啟。'
-          );
-        } else {
-          showError('無法啟動麥克風：' + (result && result.message || '未知錯誤') + '。');
-        }
-        return;
-      }
-    }
-
+    /* Success */
     state = 'running';
-    setStatus('running');
-    updateButtons();
-    rafId = requestAnimationFrame(analysisLoop);
+    setStatus('running'); syncBtns();
+    rafId = requestAnimationFrame(loop);
   });
+}
 
-  // ── Button: 暫停 ──────────────────────────────────────────────────────
-  btnPause.addEventListener('click', () => {
-    if (state !== 'running') return;
-    cancelAnimationFrame(rafId);
-    flushPending();
-    state = 'paused';
-    refreshDisplay();
-    setStatus('paused');
-    updateButtons();
-    meterBar.style.width = '0%';
-    meterVal.textContent = '0%';
-  });
+/* ── Button events ── */
+btnGo.addEventListener('click',  handleStart);
 
-  // ── Button: 結束 ──────────────────────────────────────────────────────
-  btnStop.addEventListener('click', () => {
-    if (state === 'idle') return;
-    cancelAnimationFrame(rafId);
-    flushPending();
-    state = 'done';
-    peakState   = false;
-    smoothedRMS = 0;
-    refreshDisplay();
-    setStatus('done');
-    updateButtons();
-    meterBar.style.width = '0%';
-    meterVal.textContent = '0%';
-  });
+btnHold.addEventListener('click', function() {
+  if (state !== 'running') return;
+  cancelAnimationFrame(rafId);
+  clearPending(); state = 'paused';
+  display(); setStatus('paused'); syncBtns();
+  elMeter.style.width = '0%'; elMeterPc.textContent = '0%';
+});
 
-  // ── Slider ────────────────────────────────────────────────────────────
-  threshSlider.addEventListener('input', () => {
-    threshLabel.textContent = threshSlider.value + '%';
-  });
+btnEnd.addEventListener('click', function() {
+  if (state === 'idle') return;
+  cancelAnimationFrame(rafId);
+  clearPending(); state = 'done';
+  aboveThresh = false; rmsSmooth = 0;
+  display(); setStatus('done'); syncBtns();
+  elMeter.style.width = '0%'; elMeterPc.textContent = '0%';
+});
 
-  // ── Target input ──────────────────────────────────────────────────────
-  targetInput.addEventListener('input', () => {
-    targetReached = false;
-    refreshDisplay();
-  });
+/* ── Slider ── */
+elThresh.addEventListener('input', function() {
+  elThreshV.textContent = elThresh.value + '%';
+});
 
-  // ── Init ──────────────────────────────────────────────────────────────
-  setStatus('idle');
-  updateButtons();
-  refreshDisplay();
-})();
+/* ── Target input ── */
+elTarget.addEventListener('input', function() {
+  targetDone = false; display();
+});
+
+/* ── Init ── */
+setStatus('idle'); syncBtns(); display();
+
+/* Warn immediately if on file:// */
+if (location.protocol === 'file:') {
+  showAlert(
+    '⚠️ 目前從 <code>file://</code> 開啟，Chrome 會封鎖麥克風。<br>' +
+    '請用本機伺服器：<code>python3 -m http.server 8000</code><br>' +
+    '再以 <code>http://localhost:8000</code> 開啟此頁。',
+    'err'
+  );
+}
 </script>
 </body>
 </html>
