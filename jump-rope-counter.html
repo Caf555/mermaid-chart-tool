@@ -20,24 +20,50 @@
       background: var(--bg); color: var(--text);
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
       display: flex; flex-direction: column; align-items: center;
-      min-height: 100vh; padding: 20px 16px 48px; gap: 18px;
+      min-height: 100vh; padding: 20px 16px 52px; gap: 16px;
     }
-    h1 { font-size: 1.25rem; font-weight: 800; letter-spacing: .1em;
+    h1 { font-size: 1.2rem; font-weight: 800; letter-spacing: .1em;
          color: var(--accent); text-shadow: 0 0 20px rgba(0,229,160,.4); }
 
-    /* alert bar */
+    /* ── alert ── */
     #alertBar {
       display: none; width: min(340px,94vw);
       background: rgba(255,71,87,.18); border: 1.5px solid rgba(255,71,87,.5);
-      border-radius: 12px; padding: 14px 16px;
-      font-size: .85rem; color: #ff8a95; line-height: 1.65; text-align: center;
+      border-radius: 12px; padding: 13px 15px;
+      font-size: .83rem; color: #ff8a95; line-height: 1.65; text-align: center;
     }
     #alertBar.info { background: rgba(0,184,255,.12); border-color: rgba(0,184,255,.4); color: #7dd9ff; }
-    #alertBar code { background: rgba(255,255,255,.1); border-radius: 4px; padding: 1px 5px; font-size: .8rem; }
+    #alertBar code { background: rgba(255,255,255,.1); border-radius: 4px; padding: 1px 5px; font-size: .78rem; }
 
-    /* ring */
+    /* ── activity profile pills ── */
+    .profile-wrap {
+      width: min(340px,94vw);
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .profile-label { font-size: .7rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
+    .profile-row {
+      display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+    .profile-row::-webkit-scrollbar { display: none; }
+    .profile-btn {
+      flex-shrink: 0;
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      padding: 9px 14px; border-radius: 12px; border: 1.5px solid var(--card);
+      background: var(--card); color: var(--muted); cursor: pointer;
+      font-size: .82rem; font-weight: 600; line-height: 1.2;
+      transition: border-color .15s, color .15s, background .15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .profile-btn span { font-size: .65rem; font-weight: 400; color: var(--muted); }
+    .profile-btn.active {
+      border-color: var(--accent); color: var(--accent); background: rgba(0,229,160,.08);
+    }
+    .profile-btn.active span { color: rgba(0,229,160,.6); }
+
+    /* ── ring ── */
     .display-wrap {
-      position: relative; width: min(300px,88vw); aspect-ratio: 1;
+      position: relative; width: min(280px,86vw); aspect-ratio: 1;
       display: flex; align-items: center; justify-content: center;
     }
     .ring-svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
@@ -45,54 +71,48 @@
     .ring-progress { fill: none; stroke: var(--accent); stroke-width: 10; stroke-linecap: round;
                      transition: stroke-dashoffset .4s ease, stroke .3s; }
     .ring-progress.gold { stroke: var(--warn); }
-
     .display-inner { display: flex; flex-direction: column; align-items: center; gap: 4px; z-index: 1; width: 80%; text-align: center; }
     #countNum {
-      font-size: clamp(68px,20vw,114px); font-weight: 900; line-height: 1;
+      font-size: clamp(64px,19vw,108px); font-weight: 900; line-height: 1;
       color: var(--accent); text-shadow: 0 0 28px rgba(0,229,160,.45);
       font-variant-numeric: tabular-nums; transition: color .2s, text-shadow .2s;
     }
     #countNum.pending  { color: var(--warn); text-shadow: 0 0 28px rgba(255,190,0,.5); }
-    #countNum.complete { color: var(--warn); text-shadow: 0 0 36px rgba(255,190,0,.8);
-                         animation: pulse .6s ease infinite alternate; }
+    #countNum.complete { color: var(--warn); text-shadow: 0 0 36px rgba(255,190,0,.8); animation: pulse .6s ease infinite alternate; }
     @keyframes pulse { to { transform: scale(1.05); } }
-    #centreMsg { display: none; font-size: .8rem; color: #ff8a95; line-height: 1.6; padding: 0 8px; }
+    #centreMsg { display: none; font-size: .78rem; color: #ff8a95; line-height: 1.6; padding: 0 8px; }
     #centreMsg.info { color: #7dd9ff; }
-    .count-label { font-size: .8rem; color: var(--muted); letter-spacing: .14em; text-transform: uppercase; }
-    #targetHint { font-size: .78rem; color: var(--muted); margin-top: 2px; display: none; }
+    .count-label { font-size: .78rem; color: var(--muted); letter-spacing: .14em; text-transform: uppercase; }
+    #targetHint { font-size: .76rem; color: var(--muted); margin-top: 2px; display: none; }
     #targetHint span { color: var(--warn); font-weight: 700; }
 
-    /* status */
-    #statusRow { display: flex; align-items: center; gap: 8px; font-size: .85rem; color: var(--muted); min-height: 22px; }
-    .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+    /* ── status ── */
+    #statusRow { display: flex; align-items: center; gap: 8px; font-size: .83rem; color: var(--muted); min-height: 20px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
     .dot.on   { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: blink 1s step-start infinite; }
     .dot.hold { background: var(--warn);   box-shadow: 0 0 8px var(--warn); }
     .dot.off  { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
     @keyframes blink { 50% { opacity: .2; } }
 
-    /* meter */
-    .meter-block { display: flex; flex-direction: column; gap: 6px; width: min(300px,88vw); }
-    .meter-row   { display: flex; align-items: center; gap: 10px; font-size: .75rem; color: var(--muted); }
+    /* ── meter ── */
+    .meter-block { display: flex; flex-direction: column; gap: 5px; width: min(300px,88vw); }
+    .meter-row   { display: flex; align-items: center; gap: 10px; font-size: .74rem; color: var(--muted); }
     .bar-bg      { flex: 1; height: 9px; background: var(--card); border-radius: 5px; overflow: hidden; position: relative; }
     #meterBar    { height: 100%; width: 0%; border-radius: 5px;
                    background: linear-gradient(90deg, var(--a2), var(--accent)); transition: width .04s; }
-    /* threshold marker inside bar */
     #threshMark  { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--warn);
-                   border-radius: 1px; transition: left .15s; }
+                   border-radius: 1px; transition: left .15s; left: 40%; }
+    .cal-row     { display: flex; justify-content: space-between; font-size: .7rem; color: var(--muted); }
+    .cal-row span { transition: color .25s; }
+    .cal-row .hi  { color: var(--accent); font-weight: 700; }
 
-    /* calibration row */
-    #calRow { display: flex; justify-content: space-between; font-size: .72rem; color: var(--muted); padding: 0 2px; }
-    #calRow span { transition: color .3s; }
-    #calRow .hi  { color: var(--accent); font-weight: 700; }
-
-    /* settings */
-    .card { width: min(300px,88vw); background: var(--card); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 16px; }
-    .card-title { font-size: .72rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
-    .row    { display: flex; flex-direction: column; gap: 8px; }
-    .row-hd { display: flex; justify-content: space-between; font-size: .9rem; }
+    /* ── settings ── */
+    .card { width: min(300px,88vw); background: var(--card); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+    .card-title { font-size: .7rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
+    .row    { display: flex; flex-direction: column; gap: 7px; }
+    .row-hd { display: flex; justify-content: space-between; font-size: .88rem; }
     .row-hd em { color: var(--accent); font-style: normal; font-weight: 700; }
-    .row-sub { font-size: .72rem; color: var(--muted); }
-
+    .row-sub { font-size: .7rem; color: var(--muted); line-height: 1.5; }
     input[type=range] {
       -webkit-appearance: none; width: 100%; height: 6px;
       background: #0d0f14; border-radius: 3px; outline: none; cursor: pointer;
@@ -113,24 +133,25 @@
     input[type=number]:focus { border-color: var(--accent); }
     input[type=number]::-webkit-inner-spin-button,
     input[type=number]::-webkit-outer-spin-button { opacity: 1; }
-    .note { font-size: .78rem; color: var(--muted); }
+    .note { font-size: .76rem; color: var(--muted); }
 
-    /* buttons */
+    /* ── buttons ── */
     .btn-row { display: flex; gap: 12px; width: min(300px,88vw); }
     .btn {
-      flex: 1; padding: 17px 4px; border: none; border-radius: 14px;
+      flex: 1; padding: 16px 4px; border: none; border-radius: 14px;
       font-size: 1rem; font-weight: 700; cursor: pointer;
-      transition: transform .12s, box-shadow .2s, opacity .2s;
+      transition: transform .12s, opacity .2s;
       -webkit-tap-highlight-color: transparent;
     }
     .btn:active  { transform: scale(.95); }
     .btn:disabled { opacity: .3; cursor: not-allowed; transform: none; }
-    .btn-go   { background: var(--accent);  color: #0d0f14; box-shadow: 0 0 20px rgba(0,229,160,.3); }
-    .btn-hold { background: var(--warn);    color: #0d0f14; }
-    .btn-end  { background: var(--danger);  color: #fff; }
+    .btn-go   { background: var(--accent); color: #0d0f14; }
+    .btn-hold { background: var(--warn);   color: #0d0f14; }
+    .btn-end  { background: var(--danger); color: #fff; }
 
-    /* flash */
-    #flash { position: fixed; inset: 0; pointer-events: none; opacity: 0; background: rgba(0,229,160,.12); transition: opacity .08s; }
+    /* ── flash ── */
+    #flash { position: fixed; inset: 0; pointer-events: none; opacity: 0;
+             background: rgba(0,229,160,.12); transition: opacity .08s; }
     #flash.on { opacity: 1; }
   </style>
 </head>
@@ -140,7 +161,13 @@
 <h1>🪢 跳繩計數器</h1>
 <div id="alertBar"></div>
 
-<!-- counter ring -->
+<!-- ── Activity profile selector ── -->
+<div class="profile-wrap">
+  <div class="profile-label">活動類型（頻率過濾）</div>
+  <div class="profile-row" id="profileRow"></div>
+</div>
+
+<!-- ── Counter ring ── -->
 <div class="display-wrap">
   <svg class="ring-svg" viewBox="0 0 200 200">
     <circle class="ring-bg" cx="100" cy="100" r="88"/>
@@ -156,36 +183,34 @@
 
 <div id="statusRow"><div class="dot" id="dot"></div><span id="statusTxt">待機中</span></div>
 
-<!-- meter + calibration info -->
+<!-- ── Volume meter ── -->
 <div class="meter-block">
   <div class="meter-row">
-    <span>音量</span>
+    <span>帶內音量</span>
     <div class="bar-bg">
       <div id="meterBar"></div>
-      <div id="threshMark" style="left:50%"></div>
+      <div id="threshMark"></div>
     </div>
     <span id="meterPct">0%</span>
   </div>
-  <div id="calRow">
+  <div class="cal-row">
     <span id="calBg">背景：–</span>
     <span id="calTrig">觸發線：–</span>
     <span id="calPeak">峰值：–</span>
   </div>
 </div>
 
-<!-- settings -->
+<!-- ── Settings ── -->
 <div class="card">
   <div class="card-title">設定</div>
-
   <div class="row">
     <div class="row-hd">
       <span>靈敏度（觸發倍率）</span>
       <em id="multVal">2.5×</em>
     </div>
     <input type="range" id="multSlider" min="1.5" max="8" value="2.5" step="0.5">
-    <div class="row-sub">數值越小越靈敏；建議先開始，看觸發線是否落在音量峰值內</div>
+    <div class="row-sub">倍率越小越靈敏。音量計的黃線即觸發門檻，調整使黃線落在峰值之內。</div>
   </div>
-
   <div class="row">
     <div class="row-hd"><span>目標次數</span></div>
     <div class="target-row">
@@ -195,7 +220,7 @@
   </div>
 </div>
 
-<!-- buttons -->
+<!-- ── Control buttons ── -->
 <div class="btn-row">
   <button class="btn btn-go"   id="btnGo">開始</button>
   <button class="btn btn-hold" id="btnHold" disabled>暫停</button>
@@ -203,33 +228,65 @@
 </div>
 
 <script>
-/* ───────────────────────────────────────────────
-   Detection algorithm: DYNAMIC threshold
-   threshold = max(bgRMS × multiplier, ABS_FLOOR)
+/* ═══════════════════════════════════════════════════════
+   Activity profiles
+   Each profile defines a bandpass range (low–high Hz).
+   Audio is passed through HPF → LPF before the analyser,
+   so only energy in that band drives the hit detector.
+   Breathing sits mostly in 200–2000 Hz; jump-rope thuds
+   are concentrated in 60–350 Hz — filtering eliminates
+   most breath noise from the detection signal.
+═══════════════════════════════════════════════════════ */
+var PROFILES = [
+  { id:'jumprope', icon:'🪢', label:'跳繩',    low:60,   high:350,  desc:'60–350 Hz｜繩子打地衝擊，過濾喘氣聲' },
+  { id:'running',  icon:'🏃', label:'跑步',    low:40,   high:200,  desc:'40–200 Hz｜腳步衝擊低頻' },
+  { id:'jumping',  icon:'⬆️', label:'跳躍',    low:50,   high:320,  desc:'50–320 Hz｜落地衝擊低頻' },
+  { id:'clapping', icon:'👏', label:'拍手',    low:700,  high:5000, desc:'700–5000 Hz｜拍手高頻，過濾腳步與喘氣' },
+  { id:'situp',    icon:'💪', label:'仰臥起坐', low:30,   high:180,  desc:'30–180 Hz｜背部著墊極低頻' },
+  { id:'wide',     icon:'🔊', label:'通用',    low:20,   high:18000,desc:'20–18000 Hz｜寬頻，不做頻率過濾' },
+];
+var activeProfile = PROFILES[0];
 
-   bgRMS tracks the ambient noise level slowly.
-   When RMS spikes above threshold → rising edge → one hit.
-   Background tracker pauses during a hit so loud hits
-   don't inflate the background estimate.
-─────────────────────────────────────────────── */
+/* ── Build profile pill buttons ── */
+var profileRow = document.getElementById('profileRow');
+PROFILES.forEach(function(p) {
+  var btn = document.createElement('button');
+  btn.className = 'profile-btn' + (p.id === activeProfile.id ? ' active' : '');
+  btn.innerHTML = p.icon + ' ' + p.label + '<span>' +
+    (p.low < 100 ? p.low : p.low >= 1000 ? (p.low/1000).toFixed(1)+'k' : p.low) + '–' +
+    (p.high >= 1000 ? (p.high/1000).toFixed(0)+'kHz' : p.high+'Hz') + '</span>';
+  btn.addEventListener('click', function() {
+    if (activeProfile.id === p.id) return;
+    activeProfile = p;
+    document.querySelectorAll('.profile-btn').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    applyProfileToFilters();
+    /* reset background estimate when band changes */
+    bgRMS = 0.02; peakRMS = 0;
+    showAlert('已切換：' + p.icon + ' ' + p.label + '　' + p.desc, 'info');
+    setTimeout(function(){ if(elAlert.className==='info') hideAlert(); }, 3000);
+  });
+  profileRow.appendChild(btn);
+});
 
-var audioCtx, analyser, rafId;
+/* ══════════════════════════════════════════════════════ */
+
+var audioCtx, analyser, hpFilter, lpFilter, rafId;
 var state = 'idle';
 var confirmed = 0, hasPending = false, pendingTimer = null;
 var lastHit = 0, aboveThresh = false, targetDone = false;
 
-/* tracking */
-var rawRMS   = 0;   /* current frame RMS (unsmoothed)            */
-var dispRMS  = 0;   /* fast-smoothed for meter display           */
-var bgRMS    = 0.02;/* slow background estimate, init 2% floor  */
-var peakRMS  = 0;   /* decaying peak for calibration display     */
+var rawRMS  = 0;
+var dispRMS = 0;
+var bgRMS   = 0.02;
+var peakRMS = 0;
 
-var BG_UP    = 0.04; /* background rise speed (slower = safer)  */
-var BG_DOWN  = 0.01; /* background fall speed                    */
-var DISP_A   = 0.35; /* display smoothing factor                 */
-var ABS_FLOOR= 0.003;/* absolute minimum threshold (raw RMS)     */
-var SILENCE  = 1800; /* ms silence → discard last pending hit    */
-var DEBOUNCE = 260;  /* ms min gap between hits                  */
+var BG_UP    = 0.04;
+var BG_DOWN  = 0.01;
+var DISP_A   = 0.35;
+var ABS_FLOOR= 0.003;
+var SILENCE  = 1800;
+var DEBOUNCE = 260;
 var CIRC     = 553;
 
 /* DOM */
@@ -261,7 +318,6 @@ function showAlert(html, type) {
   elAlert.style.display = 'block';
 }
 function hideAlert() { elAlert.style.display = 'none'; }
-
 function showCentre(html, type) {
   elNum.style.display = 'none';
   elCentre.innerHTML = html; elCentre.className = type === 'info' ? 'info' : '';
@@ -293,8 +349,7 @@ function display() {
     elRing.className = 'ring-progress' + (done ? ' gold' : '');
   } else {
     elTargetH.style.display = 'none';
-    elRing.style.strokeDashoffset = CIRC;
-    elRing.className = 'ring-progress';
+    elRing.style.strokeDashoffset = CIRC; elRing.className = 'ring-progress';
   }
 }
 
@@ -316,7 +371,7 @@ function bell() {
 }
 function doFlash() { elFlash.className = 'on'; setTimeout(function(){ elFlash.className = ''; }, 100); }
 
-/* ── hit registration ── */
+/* ── hit logic ── */
 function clearPending() { clearTimeout(pendingTimer); hasPending = false; }
 function schedSilence() {
   clearTimeout(pendingTimer);
@@ -335,131 +390,126 @@ function hit() {
   doFlash(); display(); schedSilence();
 }
 
-/* ── meter & calibration display ── */
+/* ── meter ── */
 function updateMeter(dynThresh) {
-  /* Scale the bar so the trigger line sits at ~40% of bar width.
-     This way a hit (which is 2–8× background) clearly exceeds the line. */
   var scale  = 0.4 / Math.max(dynThresh, ABS_FLOOR);
-  var pct    = Math.min(dispRMS * scale * 100, 100);
+  var pct    = Math.min(dispRMS   * scale * 100, 100);
   var thPct  = Math.min(dynThresh * scale * 100, 100);
-
-  elMeter.style.width    = pct + '%';
-  elMeterPc.textContent  = Math.round(pct) + '%';
-  elThMark.style.left    = thPct + '%';
-
-  /* update peak */
+  elMeter.style.width   = pct  + '%';
+  elMeterPc.textContent = Math.round(pct) + '%';
+  elThMark.style.left   = thPct + '%';
   if (rawRMS > peakRMS) peakRMS = rawRMS;
-  else peakRMS *= 0.995; /* slow decay */
-
-  elCalBg.textContent   = '背景：' + (bgRMS  * 1000).toFixed(1) + 'm';
-  elCalTrig.textContent = '觸發線：' + (dynThresh * 1000).toFixed(1) + 'm';
-  elCalPeak.textContent = '峰值：' + (peakRMS * 1000).toFixed(1) + 'm';
-
-  /* highlight trigger label when peak exceeds it (means it would trigger) */
-  elCalTrig.className = (peakRMS > dynThresh) ? 'hi' : '';
+  else peakRMS *= 0.995;
+  function fmt(v) { return (v * 1000).toFixed(1) + 'm'; }
+  elCalBg.textContent   = '背景：'  + fmt(bgRMS);
+  elCalTrig.textContent = '觸發線：' + fmt(dynThresh);
+  elCalPeak.textContent = '峰值：'  + fmt(peakRMS);
+  elCalTrig.className   = (peakRMS > dynThresh) ? 'hi' : '';
 }
 
 /* ── analysis loop ── */
 function loop() {
   if (state !== 'running') return;
-
   var buf = new Float32Array(analyser.fftSize);
   analyser.getFloatTimeDomainData(buf);
-
-  /* RMS of this frame */
   var sumSq = 0;
   for (var i = 0; i < buf.length; i++) sumSq += buf[i] * buf[i];
   rawRMS = Math.sqrt(sumSq / buf.length);
-
-  /* fast display smoother */
   dispRMS += DISP_A * (rawRMS - dispRMS);
-
-  /* background tracker: only update when NOT in a hit.
-     Rise quickly to avoid false triggers on startup;
-     fall slowly so brief loud sounds don't permanently raise bg. */
   if (!aboveThresh) {
     if (rawRMS > bgRMS) bgRMS += BG_UP   * (rawRMS - bgRMS);
     else                 bgRMS += BG_DOWN * (rawRMS - bgRMS);
   }
-
-  /* dynamic threshold */
   var mult = parseFloat(elMultSl.value);
   var dynThresh = Math.max(bgRMS * mult, ABS_FLOOR);
-
-  /* rising-edge onset detection */
   var above = rawRMS > dynThresh;
   if (above && !aboveThresh) hit();
   aboveThresh = above;
-
   updateMeter(dynThresh);
   rafId = requestAnimationFrame(loop);
 }
 
+/* ── filter application ── */
+function applyProfileToFilters() {
+  if (!hpFilter || !lpFilter) return;
+  /* clamp to Nyquist (will be resolved after audioCtx is created, but safe to set early) */
+  hpFilter.frequency.value = activeProfile.low;
+  lpFilter.frequency.value = activeProfile.high;
+}
+
+/* ── graph setup ── */
+function buildGraph(stream) {
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  var source = audioCtx.createMediaStreamSource(stream);
+
+  /* bandpass via HPF + LPF chain */
+  hpFilter = audioCtx.createBiquadFilter();
+  hpFilter.type    = 'highpass';
+  hpFilter.Q.value = 0.9;
+
+  lpFilter = audioCtx.createBiquadFilter();
+  lpFilter.type    = 'lowpass';
+  lpFilter.Q.value = 0.9;
+
+  applyProfileToFilters();
+
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 2048;
+  analyser.smoothingTimeConstant = 0;
+
+  source.connect(hpFilter);
+  hpFilter.connect(lpFilter);
+  lpFilter.connect(analyser);
+}
+
 /* ── mic setup ── */
 function startMic(cb) {
-  var constraints1 = { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } };
-  var constraints2 = { audio: true };
-  navigator.mediaDevices.getUserMedia(constraints1)
+  var c1 = { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } };
+  var c2 = { audio: true };
+  navigator.mediaDevices.getUserMedia(c1)
     .then(function(s) { buildGraph(s); cb(null); })
     .catch(function() {
-      navigator.mediaDevices.getUserMedia(constraints2)
+      navigator.mediaDevices.getUserMedia(c2)
         .then(function(s) { buildGraph(s); cb(null); })
         .catch(function(e) { cb(e); });
     });
 }
-function buildGraph(stream) {
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  analyser = audioCtx.createAnalyser();
-  analyser.fftSize = 2048;               /* ~46ms frame at 44100Hz */
-  analyser.smoothingTimeConstant = 0;    /* no built-in smoothing; we do it ourselves */
-  audioCtx.createMediaStreamSource(stream).connect(analyser);
-}
 
-/* ── start button ── */
+/* ── start ── */
 function handleStart() {
   hideAlert(); hideCentre();
-
   if (state === 'idle' || state === 'done') {
     confirmed = 0; hasPending = false; aboveThresh = false;
     dispRMS = 0; rawRMS = 0; bgRMS = 0.02; peakRMS = 0;
     lastHit = 0; targetDone = false;
     clearTimeout(pendingTimer); display();
   }
-
   if (audioCtx) {
+    /* if profile changed since last run, filters already updated */
     state = 'running'; setStatus('running'); syncBtns();
     rafId = requestAnimationFrame(loop); return;
   }
-
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    showAlert('⚠️ 此瀏覽器不支援麥克風 API。<br>請改用 Chrome 60+ 或 Safari 11+，<br>並以 https:// 開啟頁面。', 'err');
+    showAlert('⚠️ 此瀏覽器不支援麥克風 API。<br>請改用 Chrome 60+ 或 Safari 11+，並以 https:// 開啟頁面。');
     return;
   }
   if (location.protocol === 'file:') {
-    showAlert(
-      '⚠️ 從 <code>file://</code> 開啟，Chrome 會封鎖麥克風。<br>' +
-      '請改用本機伺服器：<br>' +
-      '<code>python3 -m http.server 8000</code><br>' +
-      '然後開 <code>http://localhost:8000</code>', 'err');
+    showAlert('⚠️ 從 <code>file://</code> 開啟，Chrome 封鎖麥克風。<br>請用：<code>python3 -m http.server 8000</code><br>然後開 <code>http://localhost:8000</code>');
     return;
   }
-
   btnGo.disabled = true; btnGo.textContent = '請求麥克風…';
   showCentre('正在請求<br>麥克風權限…', 'info');
-
   startMic(function(err) {
     hideCentre();
     if (err) {
       btnGo.disabled = false; syncBtns();
       var n = err.name || '';
-      var msg;
-      if (n === 'NotAllowedError' || n === 'PermissionDeniedError')
-        msg = '🚫 麥克風權限被拒絕。<br>請點擊網址列左側 🔒/ⓘ，<br>將麥克風改為「允許」後重新整理再試。';
-      else if (n === 'NotFoundError')
-        msg = '🔇 找不到麥克風，請確認裝置已連接。';
-      else
-        msg = '⚠️ 麥克風錯誤：' + (err.message || n);
-      showAlert(msg, 'err'); return;
+      var msg = n === 'NotAllowedError' || n === 'PermissionDeniedError'
+        ? '🚫 麥克風被拒絕。<br>請點 🔒/ⓘ 將麥克風改為「允許」後重新整理。'
+        : n === 'NotFoundError'
+          ? '🔇 找不到麥克風，請確認裝置已連接。'
+          : '⚠️ 麥克風錯誤：' + (err.message || n);
+      showAlert(msg); return;
     }
     state = 'running'; setStatus('running'); syncBtns();
     rafId = requestAnimationFrame(loop);
@@ -480,24 +530,19 @@ btnEnd.addEventListener('click', function() {
   display(); setStatus('done'); syncBtns();
   elMeter.style.width = '0%'; elMeterPc.textContent = '0%';
 });
-
 btnGo.addEventListener('click', handleStart);
 
-/* ── slider ── */
 elMultSl.addEventListener('input', function() {
   elMultVal.textContent = parseFloat(elMultSl.value).toFixed(1) + '×';
 });
-
-/* ── target ── */
 elTarget.addEventListener('input', function() { targetDone = false; display(); });
 
 /* ── init ── */
 setStatus('idle'); syncBtns(); display();
 if (location.protocol === 'file:') {
-  showAlert(
-    '⚠️ 目前從 <code>file://</code> 開啟，Chrome 會封鎖麥克風。<br>' +
+  showAlert('⚠️ 目前從 <code>file://</code> 開啟，Chrome 封鎖麥克風。<br>' +
     '請用：<code>python3 -m http.server 8000</code><br>' +
-    '再以 <code>http://localhost:8000</code> 開啟。', 'err');
+    '再以 <code>http://localhost:8000</code> 開啟。');
 }
 </script>
 </body>
