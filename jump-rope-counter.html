@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>跳繩計數器</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -25,11 +25,16 @@
       --r: 14px;
     }
 
-    html { height: 100%; }
+    html, body { height: 100%; }
 
     body {
+      /* Fallback order matters: last valid value wins.
+         100vh = layout viewport (may include hidden browser chrome).
+         100svh = smallest/safest dynamic unit (always fits).
+         100dvh = dynamic (resizes as chrome shows/hides) — preferred. */
+      height: 100vh;
+      height: 100svh;
       height: 100dvh;
-      height: 100vh; /* fallback */
       overflow: hidden;
       background: var(--bg);
       color: var(--text);
@@ -38,17 +43,19 @@
 
       display: grid;
       grid-template-rows:
-        44px   /* header   */
-        52px   /* profiles */
-        1fr    /* ring     */
-        50px   /* meter    */
-        74px   /* settings */
-        60px;  /* buttons  */
-      gap: 0;
+        38px          /* header   */
+        44px          /* profiles */
+        1fr           /* ring — fills remaining space */
+        40px          /* meter    */
+        64px          /* settings */
+        50px;         /* buttons  */
+      gap: 6px;
+      /* viewport-fit=cover lets us extend under gesture-nav;
+         env(safe-area-inset-bottom) is the nav-bar height to avoid. */
       padding:
-        10px
-        16px
-        max(env(safe-area-inset-bottom, 10px), 10px);
+        8px
+        14px
+        max(env(safe-area-inset-bottom, 0px) + 10px, 16px);
       max-width: 480px;
       margin: 0 auto;
     }
@@ -157,11 +164,19 @@
     }
 
     .ring-wrap {
-      /* Fill available height, maintain 1:1 ratio, cap width */
-      height: 100%;
-      aspect-ratio: 1 / 1;
+      /* Size = smallest of: available width, 50% of dvh, or 360px cap.
+         This prevents the ring from ever being larger than what fits
+         in the 1fr row, regardless of which dvh unit the browser used. */
+      /* 330px margin = fixed rows(236) + gaps(30) + paddings(24) + safe-area buffer(40) */
+      --ring-sz: min(
+        calc(100vw - 28px),
+        calc(100dvh - 330px),
+        360px
+      );
+      width:  var(--ring-sz);
+      height: var(--ring-sz);
+      max-width:  100%;   /* never overflow ring-area */
       max-height: 100%;
-      max-width: min(calc(100dvh - 296px), calc(100vw - 32px));
       position: relative;
       display: flex;
       align-items: center;
@@ -203,7 +218,7 @@
     }
 
     #countNum {
-      font-size: clamp(56px, 11dvh, 130px);
+      font-size: clamp(48px, 16vmin, 120px);
       font-weight: 900;
       line-height: .95;
       color: var(--accent);
@@ -320,8 +335,8 @@
     .setting-panel {
       display: flex;
       flex-direction: column;
-      gap: 5px;
-      padding: 12px 0;
+      gap: 4px;
+      padding: 8px 0;
     }
     .setting-panel:first-child { padding-right: 12px; }
     .setting-panel:last-child  { padding-left: 12px; }
@@ -397,7 +412,7 @@
     }
 
     .btn {
-      height: 52px;
+      height: 100%;
       border: none;
       border-radius: var(--r);
       font-size: .92rem;
