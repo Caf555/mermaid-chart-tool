@@ -471,7 +471,7 @@
 <!-- ── Row 1: Header ─────────────────────────────────────── -->
 <header>
   <div class="app-title"><strong>跳繩</strong> 計數器</div>
-  <div id="freqBadge">60–350 Hz</div>
+  <div id="freqBadge">60–400｜700–4kHz</div>
 </header>
 
 <!-- ── Row 2: Activity profiles ──────────────────────────── -->
@@ -513,9 +513,9 @@
   <div class="setting-panel">
     <div class="s-label">
       <span class="s-name">靈敏度</span>
-      <span class="s-val" id="multVal">2.5×</span>
+      <span class="s-val" id="multVal">2.0×</span>
     </div>
-    <input type="range" id="multSlider" min="1.5" max="8" value="2.5" step="0.5">
+    <input type="range" id="multSlider" min="1.5" max="8" value="2.0" step="0.5">
   </div>
 
   <div class="settings-divider"></div>
@@ -547,12 +547,12 @@
    60–350 Hz, so band-limiting to that range rejects breath noise.
 ═══════════════════════════════════════════════════════════════ */
 var PROFILES = [
-  { id:'jumprope', icon:'🪢', label:'跳繩',    low:60,   high:350,  hz:'60–350Hz' },
-  { id:'running',  icon:'🏃', label:'跑步',    low:40,   high:200,  hz:'40–200Hz' },
-  { id:'jumping',  icon:'⬆️', label:'跳躍',    low:50,   high:320,  hz:'50–320Hz' },
-  { id:'clapping', icon:'👏', label:'拍手',    low:700,  high:5000, hz:'700–5kHz' },
-  { id:'situp',    icon:'💪', label:'仰臥起坐', low:30,   high:180,  hz:'30–180Hz' },
-  { id:'wide',     icon:'🔊', label:'通用',    low:20,   high:18000,hz:'全頻' },
+  { id:'jumprope', icon:'🪢', label:'跳繩',    low:60,  high:400,  hz:'60–400｜700–4kHz', dual:true,  hiLow:700,  hiHigh:4000  },
+  { id:'running',  icon:'🏃', label:'跑步',    low:40,  high:200,  hz:'40–200Hz',          dual:false, hiLow:0,    hiHigh:0     },
+  { id:'jumping',  icon:'⬆️', label:'跳躍',    low:50,  high:320,  hz:'50–320Hz',          dual:false, hiLow:0,    hiHigh:0     },
+  { id:'clapping', icon:'👏', label:'拍手',    low:700, high:5000, hz:'700–5kHz',          dual:false, hiLow:0,    hiHigh:0     },
+  { id:'situp',    icon:'💪', label:'仰臥起坐', low:30,  high:180,  hz:'30–180Hz',          dual:false, hiLow:0,    hiHigh:0     },
+  { id:'wide',     icon:'🔊', label:'通用',    low:20,  high:18000,hz:'全頻',               dual:false, hiLow:0,    hiHigh:0     },
 ];
 var activeProfile = PROFILES[0];
 
@@ -569,7 +569,8 @@ PROFILES.forEach(function(p) {
     btn.classList.add('active');
     document.getElementById('freqBadge').textContent = p.hz;
     applyFilters();
-    bgRMS = 0.02; peakRMS = 0;
+    bgRMS = 0.02; bgHi = 0.02; peakRMS = 0;
+    lastHighMs = 0; lastSlopeHighMs = 0;
     showToast(p.icon + ' ' + p.label + '　' + p.hz, 'info', 2200);
   });
   profileRow.appendChild(btn);
@@ -577,13 +578,16 @@ PROFILES.forEach(function(p) {
 
 /* ── Audio state ───────────────────────────────────────────── */
 var audioCtx, analyser, hpf, lpf, rafId;
+var analyserHi = null, hpfHi = null, lpfHi = null;
 var state = 'idle';
 var confirmed = 0, hasPending = false, pendingTimer = null;
 var lastHit = 0, aboveThresh = false, targetDone = false;
 var rawRMS = 0, dispRMS = 0, bgRMS = 0.02, peakRMS = 0;
+var bgHi = 0.02, prevRawLo = 0, lastHighMs = 0, lastSlopeHighMs = 0;
 
 var BG_UP = 0.04, BG_DOWN = 0.01, DISP_A = 0.35;
-var ABS_FLOOR = 0.003, SILENCE = 1800, DEBOUNCE = 260, CIRC = 553;
+var ABS_FLOOR = 0.003, SILENCE = 1800, DEBOUNCE = 150, CIRC = 553;
+var HIGH_WIN = 500, SLOPE_MULT = 0.3, HI_MULT = 1.6;
 
 /* ── DOM ────────────────────────────────────────────────────── */
 var elNum     = document.getElementById('countNum');
@@ -720,19 +724,52 @@ function updateMeter(dynThresh) {
 /* ── Detection loop ─────────────────────────────────────────── */
 function loop() {
   if (state !== 'running') return;
-  var buf = new Float32Array(analyser.fftSize);
-  analyser.getFloatTimeDomainData(buf);
+
+  /* Low band */
+  var bufLo = new Float32Array(analyser.fftSize);
+  analyser.getFloatTimeDomainData(bufLo);
   var sq = 0;
-  for (var i = 0; i < buf.length; i++) sq += buf[i] * buf[i];
-  rawRMS = Math.sqrt(sq / buf.length);
+  for (var i = 0; i < bufLo.length; i++) sq += bufLo[i] * bufLo[i];
+  rawRMS = Math.sqrt(sq / bufLo.length);
+
+  /* High band */
+  var rawHi = 0;
+  if (analyserHi) {
+    var bufHi = new Float32Array(analyserHi.fftSize);
+    analyserHi.getFloatTimeDomainData(bufHi);
+    sq = 0;
+    for (var j = 0; j < bufHi.length; j++) sq += bufHi[j] * bufHi[j];
+    rawHi = Math.sqrt(sq / bufHi.length);
+  }
+
   dispRMS += DISP_A * (rawRMS - dispRMS);
+
+  /* Background tracking — only when signal is below threshold */
   if (!aboveThresh) {
     bgRMS += (rawRMS > bgRMS ? BG_UP : BG_DOWN) * (rawRMS - bgRMS);
+    bgHi  += (rawHi  > bgHi  ? BG_UP : BG_DOWN) * (rawHi  - bgHi);
   }
+
+  /* Gate 3: high-band presence window (for dual-mode profiles) */
+  if (analyserHi && rawHi > Math.max(bgHi * HI_MULT, ABS_FLOOR)) {
+    lastHighMs = Date.now();
+  }
+
+  /* Gate 2: onset slope — rising edge must exceed bgRMS × SLOPE_MULT */
+  var slope = rawRMS - prevRawLo;
+  if (slope > bgRMS * SLOPE_MULT) lastSlopeHighMs = Date.now();
+  prevRawLo = rawRMS;
+
+  /* Gate 1 + fire */
   var mult = parseFloat(elMultSl.value);
   var dynThresh = Math.max(bgRMS * mult, ABS_FLOOR);
   var above = rawRMS > dynThresh;
-  if (above && !aboveThresh) registerHit();
+  if (above && !aboveThresh) {
+    var now = Date.now();
+    var slopeRecent = (now - lastSlopeHighMs) < 60;
+    var highOk = !activeProfile.dual || ((now - lastHighMs) < HIGH_WIN);
+    if (slopeRecent && highOk) registerHit();
+  }
   aboveThresh = above;
   updateMeter(dynThresh);
   rafId = requestAnimationFrame(loop);
@@ -743,20 +780,34 @@ function applyFilters() {
   if (!hpf || !lpf) return;
   hpf.frequency.value = activeProfile.low;
   lpf.frequency.value = activeProfile.high;
+  /* High chain: only connected when profile has hiHigh > 0 */
+  if (hpfHi && lpfHi) {
+    hpfHi.frequency.value = activeProfile.hiLow  || 700;
+    lpfHi.frequency.value = activeProfile.hiHigh || 4000;
+  }
 }
 
 function buildGraph(stream) {
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   var src = audioCtx.createMediaStreamSource(stream);
-  hpf = audioCtx.createBiquadFilter();
-  hpf.type = 'highpass'; hpf.Q.value = 0.9;
-  lpf = audioCtx.createBiquadFilter();
-  lpf.type = 'lowpass';  lpf.Q.value = 0.9;
-  applyFilters();
+
+  /* Low-band chain */
+  hpf = audioCtx.createBiquadFilter(); hpf.type = 'highpass'; hpf.Q.value = 0.9;
+  lpf = audioCtx.createBiquadFilter(); lpf.type = 'lowpass';  lpf.Q.value = 0.9;
   analyser = audioCtx.createAnalyser();
-  analyser.fftSize = 2048;
+  analyser.fftSize = 1024;
   analyser.smoothingTimeConstant = 0;
   src.connect(hpf); hpf.connect(lpf); lpf.connect(analyser);
+
+  /* High-band chain (always built; used only when profile.dual = true) */
+  hpfHi = audioCtx.createBiquadFilter(); hpfHi.type = 'highpass'; hpfHi.Q.value = 0.9;
+  lpfHi = audioCtx.createBiquadFilter(); lpfHi.type = 'lowpass';  lpfHi.Q.value = 0.9;
+  analyserHi = audioCtx.createAnalyser();
+  analyserHi.fftSize = 1024;
+  analyserHi.smoothingTimeConstant = 0;
+  src.connect(hpfHi); hpfHi.connect(lpfHi); lpfHi.connect(analyserHi);
+
+  applyFilters();
 }
 
 /* ── Mic acquisition ────────────────────────────────────────── */
@@ -776,7 +827,8 @@ function handleStart() {
   hideToast();
   if (state === 'idle' || state === 'done') {
     confirmed = 0; hasPending = false; aboveThresh = false;
-    dispRMS = 0; rawRMS = 0; bgRMS = 0.02; peakRMS = 0;
+    dispRMS = 0; rawRMS = 0; bgRMS = 0.02; bgHi = 0.02; peakRMS = 0;
+    prevRawLo = 0; lastHighMs = 0; lastSlopeHighMs = 0;
     lastHit = 0; targetDone = false;
     clearTimeout(pendingTimer); display();
   }
@@ -824,6 +876,7 @@ btnGo.addEventListener('click', handleStart);
 btnHold.addEventListener('click', function() {
   if (state !== 'running') return;
   cancelAnimationFrame(rafId); clearPending();
+  prevRawLo = 0;
   state = 'paused'; display(); setStatus('paused'); syncBtns();
   elMeter.style.width = '0%'; elMeterPc.textContent = '–';
 });
@@ -831,7 +884,7 @@ btnHold.addEventListener('click', function() {
 btnEnd.addEventListener('click', function() {
   if (state === 'idle') return;
   cancelAnimationFrame(rafId); clearPending();
-  state = 'done'; aboveThresh = false; dispRMS = 0; rawRMS = 0;
+  state = 'done'; aboveThresh = false; dispRMS = 0; rawRMS = 0; prevRawLo = 0;
   display(); setStatus('done'); syncBtns();
   elMeter.style.width = '0%'; elMeterPc.textContent = '–';
 });
