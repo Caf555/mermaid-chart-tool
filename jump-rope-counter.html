@@ -218,7 +218,7 @@
     }
 
     #countNum {
-      font-size: clamp(48px, 16vmin, 120px);
+      font-size: clamp(36px, 16vmin, 240px); /* JS overrides via style.fontSize */
       font-weight: 900;
       line-height: .95;
       color: var(--accent);
@@ -649,11 +649,28 @@ function syncBtns() {
   btnGo.textContent = state === 'paused' ? '繼續' : '開始';
 }
 
+/* ── Fit count font to 90% of ring inner area ───────────────── */
+var _ringPx = 0;
+function fitCount(n) {
+  if (!_ringPx) {
+    var rw = document.querySelector('.ring-wrap');
+    if (rw && rw.offsetWidth > 10) _ringPx = rw.offsetWidth;
+    else return;
+  }
+  var inner = _ringPx * 0.835;          /* clear inner diameter */
+  var digits = String(n || 0).length;
+  /* height: 82% of inner; width: 88% of inner / digit count / char-aspect(0.60) */
+  var fs = Math.min(inner * 0.82, inner * 0.88 / digits / 0.60);
+  elNum.style.fontSize = Math.max(Math.round(fs), 36) + 'px';
+}
+window.addEventListener('resize', function() { _ringPx = 0; });
+
 /* ── Ring + count display ───────────────────────────────────── */
 function display() {
   var n   = confirmed + (hasPending ? 1 : 0);
   var tgt = parseInt(elTarget.value, 10) || 0;
   var done = tgt > 0 && n >= tgt;
+  fitCount(n);
   elNum.textContent = n;
   elNum.className   = done ? 'complete' : hasPending ? 'pending' : '';
   if (tgt > 0) {
@@ -896,6 +913,7 @@ elTarget.addEventListener('input', function() { targetDone = false; display(); }
 
 /* ── Init ────────────────────────────────────────────────── */
 setStatus('idle'); syncBtns(); display();
+setTimeout(function(){ _ringPx = 0; fitCount(0); }, 50);
 
 if (location.protocol === 'file:') {
   showToast(
