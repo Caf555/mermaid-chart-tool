@@ -569,8 +569,9 @@ PROFILES.forEach(function(p) {
     btn.classList.add('active');
     document.getElementById('freqBadge').textContent = p.hz;
     applyFilters();
-    bgRMS = 0.02; bgHi = 0.02; peakRMS = 0;
-    lastHighMs = 0; lastSlopeHighMs = 0;
+    bgRMS = 0.02; bgHi = 0.02; bgSF = 0.001; peakRMS = 0;
+    prevFreqLo = null; lastHighMs = 0; lastSlopeHighMs = 0;
+    hitHistory = []; DEBOUNCE = 150;
     showToast(p.icon + ' ' + p.label + '　' + p.hz, 'info', 2200);
   });
   profileRow.appendChild(btn);
@@ -583,11 +584,15 @@ var state = 'idle';
 var confirmed = 0, hasPending = false, pendingTimer = null;
 var lastHit = 0, aboveThresh = false, targetDone = false;
 var rawRMS = 0, dispRMS = 0, bgRMS = 0.02, peakRMS = 0;
-var bgHi = 0.02, prevRawLo = 0, lastHighMs = 0, lastSlopeHighMs = 0;
+var bgHi = 0.02, lastHighMs = 0, lastSlopeHighMs = 0;
+var prevFreqLo = null, freqBufLo = null, bgSF = 0.001;
+var hitHistory = [];
 
 var BG_UP = 0.04, BG_DOWN = 0.01, DISP_A = 0.35;
 var ABS_FLOOR = 0.003, SILENCE = 1800, DEBOUNCE = 150, CIRC = 553;
-var HIGH_WIN = 500, SLOPE_MULT = 0.3, HI_MULT = 1.6;
+var HIGH_WIN = 500, HI_MULT = 1.6;
+var SF_MULT = 4.0, FREQ_FLOOR = -80;
+var DEBOUNCE_MIN = 80, DEBOUNCE_MAX = 400;
 
 /* ── DOM ────────────────────────────────────────────────────── */
 var elNum     = document.getElementById('countNum');
@@ -717,10 +722,25 @@ function schedSilence() {
   }, SILENCE);
 }
 
+/* ── Adaptive debounce ─────────────────────────────────────── */
+function updateAdaptiveDebounce(now) {
+  hitHistory.push(now);
+  if (hitHistory.length > 9) hitHistory.shift();
+  if (hitHistory.length >= 4) {
+    var ivls = [];
+    for (var h = 1; h < hitHistory.length; h++) ivls.push(hitHistory[h] - hitHistory[h-1]);
+    ivls.sort(function(a, b){ return a - b; });
+    var median = ivls[Math.floor(ivls.length / 2)];
+    /* debounce = 40% of estimated inter-hit interval, clamped to safe range */
+    DEBOUNCE = Math.max(DEBOUNCE_MIN, Math.min(DEBOUNCE_MAX, Math.round(median * 0.40)));
+  }
+}
+
 function registerHit() {
   var now = Date.now();
   if (now - lastHit < DEBOUNCE) return;
   lastHit = now;
+  updateAdaptiveDebounce(now);
   if (hasPending) confirmed++;
   hasPending = true;
   var tgt = parseInt(elTarget.value, 10) || 0;
@@ -772,10 +792,21 @@ function loop() {
     lastHighMs = Date.now();
   }
 
-  /* Gate 2: onset slope — rising edge must exceed bgRMS × SLOPE_MULT */
-  var slope = rawRMS - prevRawLo;
-  if (slope > bgRMS * SLOPE_MULT) lastSlopeHighMs = Date.now();
-  prevRawLo = rawRMS;
+  /* Gate 2: spectral flux onset — sum of positive spectral changes in filtered band */
+  var sf = 0;
+  if (freqBufLo) {
+    analyser.getFloatFrequencyData(freqBufLo);
+    if (prevFreqLo) {
+      for (var k = 0; k < freqBufLo.length; k++) {
+        var diff = Math.max(freqBufLo[k], FREQ_FLOOR) - Math.max(prevFreqLo[k], FREQ_FLOOR);
+        if (diff > 0) sf += diff;
+      }
+    }
+    if (!prevFreqLo) prevFreqLo = new Float32Array(freqBufLo.length);
+    prevFreqLo.set(freqBufLo);
+  }
+  if (!aboveThresh) bgSF += (sf > bgSF ? BG_UP : BG_DOWN) * (sf - bgSF);
+  if (sf > bgSF * SF_MULT) lastSlopeHighMs = Date.now();
 
   /* Gate 1 + fire */
   var mult = parseFloat(elMultSl.value);
@@ -815,6 +846,7 @@ function buildGraph(stream) {
   analyser.fftSize = 1024;
   analyser.smoothingTimeConstant = 0;
   src.connect(hpf); hpf.connect(lpf); lpf.connect(analyser);
+  freqBufLo = new Float32Array(analyser.frequencyBinCount); /* pre-allocated for SF */
 
   /* High-band chain (always built; used only when profile.dual = true) */
   hpfHi = audioCtx.createBiquadFilter(); hpfHi.type = 'highpass'; hpfHi.Q.value = 0.9;
@@ -844,8 +876,9 @@ function handleStart() {
   hideToast();
   if (state === 'idle' || state === 'done') {
     confirmed = 0; hasPending = false; aboveThresh = false;
-    dispRMS = 0; rawRMS = 0; bgRMS = 0.02; bgHi = 0.02; peakRMS = 0;
-    prevRawLo = 0; lastHighMs = 0; lastSlopeHighMs = 0;
+    dispRMS = 0; rawRMS = 0; bgRMS = 0.02; bgHi = 0.02; bgSF = 0.001; peakRMS = 0;
+    prevFreqLo = null; lastHighMs = 0; lastSlopeHighMs = 0;
+    hitHistory = []; DEBOUNCE = 150;
     lastHit = 0; targetDone = false;
     clearTimeout(pendingTimer); display();
   }
@@ -893,7 +926,7 @@ btnGo.addEventListener('click', handleStart);
 btnHold.addEventListener('click', function() {
   if (state !== 'running') return;
   cancelAnimationFrame(rafId); clearPending();
-  prevRawLo = 0;
+  prevFreqLo = null; hitHistory = [];
   state = 'paused'; display(); setStatus('paused'); syncBtns();
   elMeter.style.width = '0%'; elMeterPc.textContent = '–';
 });
@@ -901,7 +934,8 @@ btnHold.addEventListener('click', function() {
 btnEnd.addEventListener('click', function() {
   if (state === 'idle') return;
   cancelAnimationFrame(rafId); clearPending();
-  state = 'done'; aboveThresh = false; dispRMS = 0; rawRMS = 0; prevRawLo = 0;
+  state = 'done'; aboveThresh = false; dispRMS = 0; rawRMS = 0;
+  prevFreqLo = null; hitHistory = []; DEBOUNCE = 150;
   display(); setStatus('done'); syncBtns();
   elMeter.style.width = '0%'; elMeterPc.textContent = '–';
 });
