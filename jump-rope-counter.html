@@ -587,12 +587,13 @@ var rawRMS = 0, dispRMS = 0, bgRMS = 0.02, peakRMS = 0;
 var bgHi = 0.02, lastHighMs = 0, lastSlopeHighMs = 0;
 var prevFreqLo = null, freqBufLo = null, bgSF = 0.001;
 var hitHistory = [];
+var peakRmsHit = 0;
 
 var BG_UP = 0.04, BG_DOWN = 0.01, DISP_A = 0.35;
-var ABS_FLOOR = 0.003, SILENCE = 1800, DEBOUNCE = 150, CIRC = 553;
+var ABS_FLOOR = 0.003, SILENCE = 1800, DEBOUNCE = 100, CIRC = 553;
 var HIGH_WIN = 500, HI_MULT = 1.6;
-var SF_MULT = 4.0, FREQ_FLOOR = -80;
-var DEBOUNCE_MIN = 80, DEBOUNCE_MAX = 400;
+var SF_MULT = 2.0, FREQ_FLOOR = -80, REARM_RATIO = 0.50;
+var DEBOUNCE_MIN = 60, DEBOUNCE_MAX = 400;
 
 /* ── DOM ────────────────────────────────────────────────────── */
 var elNum     = document.getElementById('countNum');
@@ -812,9 +813,24 @@ function loop() {
   var mult = parseFloat(elMultSl.value);
   var dynThresh = Math.max(bgRMS * mult, ABS_FLOOR);
   var above = rawRMS > dynThresh;
+
+  /* Peak-decay re-arm: track peak while above threshold; when signal falls to
+     REARM_RATIO of that peak, force aboveThresh=false so next rising edge is
+     detected even if signal never fully dropped below the absolute threshold.
+     This keeps fast jump detection working at 200–400+ BPM.              */
+  if (above) {
+    if (rawRMS > peakRmsHit) peakRmsHit = rawRMS;
+    if (aboveThresh && rawRMS < peakRmsHit * REARM_RATIO) {
+      aboveThresh = false;   /* re-arm — debounce in registerHit() prevents double-count */
+      peakRmsHit = rawRMS;
+    }
+  } else {
+    peakRmsHit = 0;          /* reset peak tracker when genuinely below threshold */
+  }
+
   if (above && !aboveThresh) {
     var now = Date.now();
-    var slopeRecent = (now - lastSlopeHighMs) < 60;
+    var slopeRecent = (now - lastSlopeHighMs) < 200;   /* 200ms — robust across frame rates */
     var highOk = !activeProfile.dual || ((now - lastHighMs) < HIGH_WIN);
     if (slopeRecent && highOk) registerHit();
   }
@@ -843,7 +859,7 @@ function buildGraph(stream) {
   hpf = audioCtx.createBiquadFilter(); hpf.type = 'highpass'; hpf.Q.value = 0.9;
   lpf = audioCtx.createBiquadFilter(); lpf.type = 'lowpass';  lpf.Q.value = 0.9;
   analyser = audioCtx.createAnalyser();
-  analyser.fftSize = 1024;
+  analyser.fftSize = 512;                                    /* 11.6ms buffer — lower transient latency */
   analyser.smoothingTimeConstant = 0;
   src.connect(hpf); hpf.connect(lpf); lpf.connect(analyser);
   freqBufLo = new Float32Array(analyser.frequencyBinCount); /* pre-allocated for SF */
@@ -852,7 +868,7 @@ function buildGraph(stream) {
   hpfHi = audioCtx.createBiquadFilter(); hpfHi.type = 'highpass'; hpfHi.Q.value = 0.9;
   lpfHi = audioCtx.createBiquadFilter(); lpfHi.type = 'lowpass';  lpfHi.Q.value = 0.9;
   analyserHi = audioCtx.createAnalyser();
-  analyserHi.fftSize = 1024;
+  analyserHi.fftSize = 512;
   analyserHi.smoothingTimeConstant = 0;
   src.connect(hpfHi); hpfHi.connect(lpfHi); lpfHi.connect(analyserHi);
 
@@ -878,7 +894,7 @@ function handleStart() {
     confirmed = 0; hasPending = false; aboveThresh = false;
     dispRMS = 0; rawRMS = 0; bgRMS = 0.02; bgHi = 0.02; bgSF = 0.001; peakRMS = 0;
     prevFreqLo = null; lastHighMs = 0; lastSlopeHighMs = 0;
-    hitHistory = []; DEBOUNCE = 150;
+    peakRmsHit = 0; hitHistory = []; DEBOUNCE = 100;
     lastHit = 0; targetDone = false;
     clearTimeout(pendingTimer); display();
   }
@@ -926,7 +942,7 @@ btnGo.addEventListener('click', handleStart);
 btnHold.addEventListener('click', function() {
   if (state !== 'running') return;
   cancelAnimationFrame(rafId); clearPending();
-  prevFreqLo = null; hitHistory = [];
+  prevFreqLo = null; hitHistory = []; peakRmsHit = 0;
   state = 'paused'; display(); setStatus('paused'); syncBtns();
   elMeter.style.width = '0%'; elMeterPc.textContent = '–';
 });
@@ -935,7 +951,7 @@ btnEnd.addEventListener('click', function() {
   if (state === 'idle') return;
   cancelAnimationFrame(rafId); clearPending();
   state = 'done'; aboveThresh = false; dispRMS = 0; rawRMS = 0;
-  prevFreqLo = null; hitHistory = []; DEBOUNCE = 150;
+  prevFreqLo = null; hitHistory = []; peakRmsHit = 0; DEBOUNCE = 100;
   display(); setStatus('done'); syncBtns();
   elMeter.style.width = '0%'; elMeterPc.textContent = '–';
 });
