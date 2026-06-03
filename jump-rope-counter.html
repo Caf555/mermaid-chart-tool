@@ -471,7 +471,7 @@
 <!-- ── Row 1: Header ─────────────────────────────────────── -->
 <header>
   <div class="app-title"><strong>跳繩</strong> 計數器</div>
-  <div id="freqBadge">60–400｜700–4kHz</div>
+  <div id="freqBadge">2k–16kHz</div>
 </header>
 
 <!-- ── Row 2: Activity profiles ──────────────────────────── -->
@@ -513,9 +513,9 @@
   <div class="setting-panel">
     <div class="s-label">
       <span class="s-name">靈敏度</span>
-      <span class="s-val" id="multVal">1.5×</span>
+      <span class="s-val" id="multVal">2.0×</span>
     </div>
-    <input type="range" id="multSlider" min="1.0" max="8" value="1.5" step="0.1">
+    <input type="range" id="multSlider" min="1.0" max="8" value="2.0" step="0.1">
   </div>
 
   <div class="settings-divider"></div>
@@ -547,7 +547,7 @@
    60–350 Hz, so band-limiting to that range rejects breath noise.
 ═══════════════════════════════════════════════════════════════ */
 var PROFILES = [
-  { id:'jumprope', icon:'🪢', label:'跳繩',    low:60,  high:400,  hz:'60–400｜700–4kHz', dual:true,  hiLow:700,  hiHigh:4000  },
+  { id:'jumprope', icon:'🪢', label:'跳繩',    low:2000, high:16000, hz:'2k–16kHz',          dual:false, hiLow:0,    hiHigh:0     },
   { id:'running',  icon:'🏃', label:'跑步',    low:40,  high:200,  hz:'40–200Hz',          dual:false, hiLow:0,    hiHigh:0     },
   { id:'jumping',  icon:'⬆️', label:'跳躍',    low:50,  high:320,  hz:'50–320Hz',          dual:false, hiLow:0,    hiHigh:0     },
   { id:'clapping', icon:'👏', label:'拍手',    low:700, high:5000, hz:'700–5kHz',          dual:false, hiLow:0,    hiHigh:0     },
