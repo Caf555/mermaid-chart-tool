@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>跳繩計數器</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0a0c10;
+      --surface: #13161f;
+      --card:    #1a1e2a;
+      --border:  rgba(255,255,255,.07);
+      --accent:  #00e5a0;
+      --a-dim:   rgba(0,229,160,.15);
+      --a2:      #00b8ff;
+      --warn:    #ffbe00;
+      --w-dim:   rgba(255,190,0,.15);
+      --danger:  #ff4757;
+      --d-dim:   rgba(255,71,87,.15);
+      --text:    #dde1ea;
+      --sub:     #8892a4;
+      --muted:   #454f61;
+      --r: 14px;
+    }
+
+    html, body { height: 100%; }
+
+    body {
+      /* Fallback order matters: last valid value wins.
+         100vh = layout viewport (may include hidden browser chrome).
+         100svh = smallest/safest dynamic unit (always fits).
+         100dvh = dynamic (resizes as chrome shows/hides) — preferred. */
+      height: 100vh;
+      height: 100svh;
+      height: 100dvh;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+
+      display: grid;
+      grid-template-rows:
+        38px          /* header   */
+        44px          /* profiles */
+        1fr           /* ring — fills remaining space */
+        40px          /* meter    */
+        64px          /* settings */
+        50px;         /* buttons  */
+      gap: 6px;
+      /* viewport-fit=cover lets us extend under gesture-nav;
+         env(safe-area-inset-bottom) is the nav-bar height to avoid. */
+      padding:
+        8px
+        14px
+        max(env(safe-area-inset-bottom, 0px) + 10px, 16px);
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    /* ══ FLOATING TOAST (does not affect grid) ══════════════════════════ */
+    #toast {
+      display: none;
+      position: fixed;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(360px, calc(100vw - 24px));
+      background: #1a1e2a;
+      border: 1px solid rgba(255,71,87,.5);
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: .8rem;
+      color: #ff8a95;
+      line-height: 1.6;
+      text-align: center;
+      z-index: 999;
+      box-shadow: 0 8px 32px rgba(0,0,0,.5);
+    }
+    #toast.info { border-color: rgba(0,229,160,.4); color: var(--accent); }
+    #toast.warn { border-color: rgba(255,190,0,.5); color: var(--warn); }
+    #toast code {
+      background: rgba(255,255,255,.08);
+      border-radius: 4px; padding: 1px 5px; font-size: .76rem;
+    }
+    #toast .close-btn {
+      position: absolute; top: 8px; right: 10px;
+      font-size: .9rem; color: var(--muted); cursor: pointer;
+      background: none; border: none; padding: 0;
+      line-height: 1;
+    }
+
+    /* ══ ROW 1 · HEADER ═══════════════════════════════════════════════ */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2px;
+    }
+    .app-title {
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--sub);
+    }
+    .app-title strong { color: var(--accent); }
+    #freqBadge {
+      font-size: .68rem;
+      padding: 3px 9px;
+      border-radius: 20px;
+      background: var(--a-dim);
+      color: var(--accent);
+      border: 1px solid rgba(0,229,160,.25);
+      letter-spacing: .05em;
+      transition: all .25s;
+    }
+
+    /* ══ ROW 2 · PROFILE PILLS ════════════════════════════════════════ */
+    .profiles {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      padding: 2px 2px;
+    }
+    .profiles::-webkit-scrollbar { display: none; }
+
+    .pill {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      height: 36px;
+      padding: 0 13px;
+      border-radius: 18px;
+      border: 1.5px solid var(--muted);
+      background: transparent;
+      color: var(--sub);
+      font-size: .78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color .15s, color .15s, background .15s;
+      -webkit-tap-highlight-color: transparent;
+      white-space: nowrap;
+    }
+    .pill .icon { font-size: .9rem; }
+    .pill.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--a-dim);
+    }
+
+    /* ══ ROW 3 · RING DISPLAY ════════════════════════════════════════ */
+    .ring-area {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 0;       /* critical: allow grid row to shrink */
+      position: relative;
+    }
+
+    .ring-wrap {
+      /* Size = smallest of: available width, 50% of dvh, or 360px cap.
+         This prevents the ring from ever being larger than what fits
+         in the 1fr row, regardless of which dvh unit the browser used. */
+      /* 330px margin = fixed rows(236) + gaps(30) + paddings(24) + safe-area buffer(40) */
+      --ring-sz: min(
+        calc(100vw - 28px),
+        calc(100dvh - 330px),
+        360px
+      );
+      width:  var(--ring-sz);
+      height: var(--ring-sz);
+      max-width:  100%;   /* never overflow ring-area */
+      max-height: 100%;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ring-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+    .ring-track {
+      fill: none;
+      stroke: var(--card);
+      stroke-width: 9;
+    }
+    .ring-fill {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 9;
+      stroke-linecap: round;
+      transition: stroke-dashoffset .45s cubic-bezier(.4,0,.2,1), stroke .3s;
+      filter: drop-shadow(0 0 6px rgba(0,229,160,.35));
+    }
+    .ring-fill.gold {
+      stroke: var(--warn);
+      filter: drop-shadow(0 0 8px rgba(255,190,0,.5));
+    }
+
+    .ring-inner {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    #countNum {
+      font-size: clamp(36px, 16vmin, 240px); /* JS overrides via style.fontSize */
+      font-weight: 900;
+      line-height: .95;
+      color: var(--accent);
+      text-shadow: 0 0 40px rgba(0,229,160,.4);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -.02em;
+      transition: color .2s, text-shadow .2s;
+    }
+    #countNum.pending  {
+      color: var(--warn);
+      text-shadow: 0 0 40px rgba(255,190,0,.4);
+    }
+    #countNum.complete {
+      color: var(--warn);
+      text-shadow: 0 0 50px rgba(255,190,0,.7);
+      animation: pulse .55s ease infinite alternate;
+    }
+    @keyframes pulse { to { transform: scale(1.04); } }
+
+    #centreMsg {
+      display: none;
+      font-size: .78rem;
+      color: var(--sub);
+      line-height: 1.55;
+      text-align: center;
+      padding: 0 8px;
+    }
+    #centreMsg.hi { color: var(--accent); }
+
+    .count-lbl {
+      font-size: .6rem;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+    #targetHint {
+      font-size: .68rem;
+      color: var(--muted);
+      display: none;
+    }
+    #targetHint b { color: var(--warn); font-weight: 700; }
+
+    /* ══ ROW 4 · STATUS + METER ══════════════════════════════════════ */
+    .meter-section {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 0 2px;
+    }
+
+    #statusRow {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+    .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--muted);
+      flex-shrink: 0;
+    }
+    .dot.on   { background: var(--accent); box-shadow: 0 0 7px var(--accent); animation: blink 1s step-start infinite; }
+    .dot.hold { background: var(--warn);   box-shadow: 0 0 7px var(--warn); }
+    .dot.off  { background: var(--danger); box-shadow: 0 0 7px var(--danger); }
+    @keyframes blink { 50% { opacity: .15; } }
+    #statusTxt { font-size: .72rem; color: var(--sub); }
+
+    .bar-bg {
+      height: 6px;
+      background: var(--card);
+      border-radius: 3px;
+      overflow: hidden;
+      position: relative;
+    }
+    #meterFill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--a2) 0%, var(--accent) 100%);
+      border-radius: 3px;
+      transition: width .04s;
+    }
+    #threshLine {
+      position: absolute;
+      top: 0; bottom: 0;
+      width: 2px;
+      background: var(--warn);
+      border-radius: 1px;
+      left: 40%;
+      transition: left .12s;
+    }
+    #meterPct { font-size: .68rem; color: var(--muted); min-width: 26px; text-align: right; }
+
+    /* ══ ROW 5 · SETTINGS ════════════════════════════════════════════ */
+    .settings {
+      display: grid;
+      grid-template-columns: 1fr 1px 1fr;
+      align-items: center;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 0 16px;
+      gap: 0;
+    }
+
+    .settings-divider {
+      background: var(--border);
+      height: 40px;
+      width: 1px;
+    }
+
+    .setting-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 8px 0;
+    }
+    .setting-panel:first-child { padding-right: 12px; }
+    .setting-panel:last-child  { padding-left: 12px; }
+
+    .s-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    .s-name {
+      font-size: .67rem;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--muted);
+    }
+    .s-val {
+      font-size: .78rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%; height: 4px;
+      background: var(--surface);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 6px rgba(0,229,160,.6);
+      cursor: pointer;
+    }
+    input[type=range]::-moz-range-thumb {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: var(--accent); border: none; cursor: pointer;
+    }
+
+    .target-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    input[type=number] {
+      flex: 1;
+      min-width: 0;
+      background: var(--surface);
+      border: 1px solid var(--muted);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: .9rem;
+      font-weight: 600;
+      padding: 6px 8px;
+      outline: none;
+      text-align: center;
+      transition: border-color .2s;
+    }
+    input[type=number]:focus { border-color: var(--accent); }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { opacity: 1; }
+    .s-unit { font-size: .65rem; color: var(--muted); white-space: nowrap; }
+
+    /* ══ ROW 6 · CONTROL BUTTONS ════════════════════════════════════ */
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    .btn {
+      height: 100%;
+      border: none;
+      border-radius: var(--r);
+      font-size: .92rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: .04em;
+      transition: transform .1s, opacity .2s, box-shadow .2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn:active  { transform: scale(.94); }
+    .btn:disabled { opacity: .28; cursor: not-allowed; transform: none !important; }
+
+    .btn-go {
+      background: var(--accent);
+      color: #07120e;
+      box-shadow: 0 4px 18px rgba(0,229,160,.3);
+    }
+    .btn-go:not(:disabled):hover { box-shadow: 0 4px 24px rgba(0,229,160,.5); }
+
+    .btn-hold {
+      background: var(--card);
+      color: var(--warn);
+      border: 1.5px solid rgba(255,190,0,.35);
+    }
+    .btn-hold:not(:disabled):hover { background: var(--w-dim); }
+
+    .btn-end {
+      background: var(--card);
+      color: var(--danger);
+      border: 1.5px solid rgba(255,71,87,.3);
+    }
+    .btn-end:not(:disabled):hover { background: var(--d-dim); }
+
+    /* ══ FULL-SCREEN FLASH ══════════════════════════════════════════ */
+    #flash {
+      position: fixed; inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      background: rgba(0,229,160,.09);
+      transition: opacity .07s;
+    }
+    #flash.on { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<!-- flash overlay -->
+<div id="flash"></div>
+
+<!-- floating toast (fixed, outside grid flow) -->
+<div id="toast">
+  <button class="close-btn" id="toastClose">✕</button>
+  <span id="toastMsg"></span>
+</div>
+
+<!-- ── Row 1: Header ─────────────────────────────────────── -->
+<header>
+  <div class="app-title"><strong>跳繩</strong> 計數器</div>
+  <div id="freqBadge">2k–16kHz</div>
+</header>
+
+<!-- ── Row 2: Activity profiles ──────────────────────────── -->
+<div class="profiles" id="profileRow"></div>
+
+<!-- ── Row 3: Ring display ───────────────────────────────── -->
+<div class="ring-area">
+  <div class="ring-wrap">
+    <svg class="ring-svg" viewBox="0 0 200 200">
+      <circle class="ring-track" cx="100" cy="100" r="88"/>
+      <circle class="ring-fill" cx="100" cy="100" r="88" id="ringFill"
+              stroke-dasharray="553" stroke-dashoffset="553"/>
+    </svg>
+    <div class="ring-inner">
+      <div id="countNum">0</div>
+      <div id="centreMsg"></div>
+      <div class="count-lbl">次數</div>
+      <div id="targetHint">目標 <b id="targetNum">0</b></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Row 4: Status + meter ──────────────────────────────── -->
+<div class="meter-section">
+  <div id="statusRow">
+    <div class="dot" id="dot"></div>
+    <span id="statusTxt">待機</span>
+  </div>
+  <div class="bar-bg">
+    <div id="meterFill"></div>
+    <div id="threshLine"></div>
+  </div>
+  <span id="meterPct">–</span>
+</div>
+
+<!-- ── Row 5: Settings ────────────────────────────────────── -->
+<div class="settings">
+  <!-- Sensitivity -->
+  <div class="setting-panel">
+    <div class="s-label">
+      <span class="s-name">靈敏度</span>
+      <span class="s-val" id="multVal">2.0×</span>
+    </div>
+    <input type="range" id="multSlider" min="1.0" max="8" value="2.0" step="0.1">
+  </div>
+
+  <div class="settings-divider"></div>
+
+  <!-- Target -->
+  <div class="setting-panel">
+    <div class="s-label">
+      <span class="s-name">目標次數</span>
+    </div>
+    <div class="target-input-wrap">
+      <input type="number" id="targetIn" min="0" max="9999" value="0" placeholder="∞">
+      <span class="s-unit">次<br>0=∞</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── Row 6: Buttons ─────────────────────────────────────── -->
+<div class="controls">
+  <button class="btn btn-go"   id="btnGo">開始</button>
+  <button class="btn btn-hold" id="btnHold" disabled>暫停</button>
+  <button class="btn btn-end"  id="btnEnd"  disabled>結束</button>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   Activity profiles — BiquadFilter HPF+LPF chain
+   Each profile targets the dominant frequency of its impact sound.
+   Breathing concentrates in 200–2000 Hz; jump rope thuds peak at
+   60–350 Hz, so band-limiting to that range rejects breath noise.
+═══════════════════════════════════════════════════════════════ */
+var PROFILES = [
+  { id:'jumprope', icon:'🪢', label:'跳繩',    low:2000, high:16000, hz:'2k–16kHz',          dual:false, hiLow:0,    hiHigh:0     },
+  { id:'running',  icon:'🏃', label:'跑步',    low:40,  high:200,  hz:'40–200Hz',          dual:false, hiLow:0,    hiHigh:0     },
+  { id:'jumping',  icon:'⬆️', label:'跳躍',    low:50,  high:320,  hz:'50–320Hz',          dual:false, hiLow:0,    hiHigh:0     },
+  { id:'clapping', icon:'👏', label:'拍手',    low:700, high:5000, hz:'700–5kHz',          dual:false, hiLow:0,    hiHigh:0     },
+  { id:'situp',    icon:'💪', label:'仰臥起坐', low:30,  high:180,  hz:'30–180Hz',          dual:false, hiLow:0,    hiHigh:0     },
+  { id:'wide',     icon:'🔊', label:'通用',    low:20,  high:18000,hz:'全頻',               dual:false, hiLow:0,    hiHigh:0     },
+];
+var activeProfile = PROFILES[0];
+
+/* Build profile pills */
+var profileRow = document.getElementById('profileRow');
+PROFILES.forEach(function(p) {
+  var btn = document.createElement('button');
+  btn.className = 'pill' + (p.id === activeProfile.id ? ' active' : '');
+  btn.innerHTML = '<span class="icon">' + p.icon + '</span>' + p.label;
+  btn.addEventListener('click', function() {
+    if (activeProfile.id === p.id) return;
+    activeProfile = p;
+    document.querySelectorAll('.pill').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    document.getElementById('freqBadge').textContent = p.hz;
+    applyFilters();
+    bgRMS = 0.02; bgHi = 0.02; bgSF = 0.001; peakRMS = 0;
+    prevFreqLo = null; lastHighMs = 0; lastSlopeHighMs = 0;
+    hitHistory = []; DEBOUNCE = 150;
+    showToast(p.icon + ' ' + p.label + '　' + p.hz, 'info', 2200);
+  });
+  profileRow.appendChild(btn);
+});
+
+/* ── Audio state ───────────────────────────────────────────── */
+var audioCtx, analyser, hpf, lpf, rafId;
+var analyserHi = null, hpfHi = null, lpfHi = null;
+var state = 'idle';
+var confirmed = 0, hasPending = false, pendingTimer = null;
+var lastHit = 0, aboveThresh = false, targetDone = false;
+var rawRMS = 0, dispRMS = 0, bgRMS = 0.02, peakRMS = 0;
+var bgHi = 0.02, lastHighMs = 0, lastSlopeHighMs = 0;
+var prevFreqLo = null, freqBufLo = null, bgSF = 0.001;
+var hitHistory = [];
+var peakRmsHit = 0;
+var bufTimeLo = null, bufTimeHi = null;  /* pre-allocated — eliminates GC pauses */
+
+/* BG_UP < BG_DOWN: noise floor rises slowly (ignores transients) but falls quickly.
+   Classic VAD / onset-detection literature recommendation (Böck 2013, PMC9783232). */
+var BG_UP = 0.008, BG_DOWN = 0.018, DISP_A = 0.35;
+var ABS_FLOOR = 0.003, SILENCE = 1800, DEBOUNCE = 100, CIRC = 553;
+var HIGH_WIN = 500, HI_MULT = 1.6;
+var SF_MULT = 1.5, FREQ_FLOOR = -80, REARM_RATIO = 0.45;
+var DEBOUNCE_MIN = 60, DEBOUNCE_MAX = 400;
+
+/* ── DOM ────────────────────────────────────────────────────── */
+var elNum     = document.getElementById('countNum');
+var elCentre  = document.getElementById('centreMsg');
+var elDot     = document.getElementById('dot');
+var elStatus  = document.getElementById('statusTxt');
+var elMeter   = document.getElementById('meterFill');
+var elMeterPc = document.getElementById('meterPct');
+var elThLine  = document.getElementById('threshLine');
+var elMultSl  = document.getElementById('multSlider');
+var elMultVal = document.getElementById('multVal');
+var elTarget  = document.getElementById('targetIn');
+var elTargetH = document.getElementById('targetHint');
+var elTargetN = document.getElementById('targetNum');
+var elRing    = document.getElementById('ringFill');
+var elFlash   = document.getElementById('flash');
+var elToast   = document.getElementById('toast');
+var elToastMsg= document.getElementById('toastMsg');
+var elFreqBdg = document.getElementById('freqBadge');
+var btnGo     = document.getElementById('btnGo');
+var btnHold   = document.getElementById('btnHold');
+var btnEnd    = document.getElementById('btnEnd');
+var toastTimer;
+
+/* ── Toast ─────────────────────────────────────────────────── */
+function showToast(msg, type, ms) {
+  elToastMsg.innerHTML = msg;
+  elToast.className = type || '';
+  elToast.style.display = 'block';
+  clearTimeout(toastTimer);
+  if (ms) toastTimer = setTimeout(hideToast, ms);
+}
+function hideToast() { elToast.style.display = 'none'; }
+document.getElementById('toastClose').addEventListener('click', hideToast);
+
+/* ── Centre message inside ring ─────────────────────────────── */
+function showCentre(html, cls) {
+  elNum.style.display = 'none';
+  elCentre.innerHTML = html; elCentre.className = cls || '';
+  elCentre.style.display = 'block';
+}
+function hideCentre() {
+  elCentre.style.display = 'none'; elNum.style.display = '';
+}
+
+/* ── Status dot ─────────────────────────────────────────────── */
+function setStatus(s) {
+  var cls = { idle:'', running:'on', paused:'hold', done:'off' };
+  elDot.className = 'dot ' + (cls[s] || '');
+  var lbl = { idle:'待機', running:'偵測中', paused:'暫停', done:'完成' };
+  elStatus.textContent = lbl[s] || s;
+}
+
+/* ── Button sync ────────────────────────────────────────────── */
+function syncBtns() {
+  btnGo.disabled   = (state === 'running' || state === 'done');
+  btnHold.disabled = (state !== 'running');
+  btnEnd.disabled  = (state === 'idle' || state === 'done');
+  btnGo.textContent = state === 'paused' ? '繼續' : '開始';
+}
+
+/* ── Fit count font to 90% of ring inner area ───────────────── */
+var _ringPx = 0;
+function fitCount(n) {
+  if (!_ringPx) {
+    var rw = document.querySelector('.ring-wrap');
+    if (rw && rw.offsetWidth > 10) _ringPx = rw.offsetWidth;
+    else return;
+  }
+  var inner = _ringPx * 0.835;          /* clear inner diameter */
+  var digits = String(n || 0).length;
+  /* height: 82% of inner; width: 88% of inner / digit count / char-aspect(0.60) */
+  var fs = Math.min(inner * 0.82, inner * 0.88 / digits / 0.60);
+  elNum.style.fontSize = Math.max(Math.round(fs), 36) + 'px';
+}
+window.addEventListener('resize', function() { _ringPx = 0; });
+
+/* ── Ring + count display ───────────────────────────────────── */
+function display() {
+  var n   = confirmed + (hasPending ? 1 : 0);
+  var tgt = parseInt(elTarget.value, 10) || 0;
+  var done = tgt > 0 && n >= tgt;
+  fitCount(n);
+  elNum.textContent = n;
+  elNum.className   = done ? 'complete' : hasPending ? 'pending' : '';
+  if (tgt > 0) {
+    elTargetH.style.display = ''; elTargetN.textContent = tgt;
+    elRing.style.strokeDashoffset = CIRC * (1 - Math.min(n / tgt, 1));
+    elRing.className = 'ring-fill' + (done ? ' gold' : '');
+  } else {
+    elTargetH.style.display = 'none';
+    elRing.style.strokeDashoffset = CIRC;
+    elRing.className = 'ring-fill';
+  }
+}
+
+/* ── Bell ────────────────────────────────────────────────────── */
+function bell() {
+  try {
+    var c = new (window.AudioContext || window.webkitAudioContext)();
+    var t = c.currentTime;
+    [[880,.5,2.5],[1760,.3,1.8],[2640,.2,1.2],[1174,.25,2]].forEach(function(x){
+      var o = c.createOscillator(), g = c.createGain();
+      o.type = 'sine'; o.frequency.value = x[0];
+      g.gain.setValueAtTime(x[1], t);
+      g.gain.exponentialRampToValueAtTime(.001, t+x[2]);
+      o.connect(g); g.connect(c.destination);
+      o.start(t); o.stop(t+x[2]);
+    });
+    setTimeout(function(){ c.close(); }, 3500);
+  } catch(e) {}
+}
+
+/* ── Flash ────────────────────────────────────────────────────── */
+function doFlash() {
+  elFlash.className = 'on';
+  setTimeout(function(){ elFlash.className = ''; }, 90);
+}
+
+/* ── Pending hit logic ──────────────────────────────────────── */
+function clearPending() { clearTimeout(pendingTimer); hasPending = false; }
+
+function schedSilence() {
+  clearTimeout(pendingTimer);
+  pendingTimer = setTimeout(function() {
+    if (state === 'running' && hasPending) { hasPending = false; display(); }
+  }, SILENCE);
+}
+
+/* ── Adaptive debounce ─────────────────────────────────────── */
+function updateAdaptiveDebounce(now) {
+  hitHistory.push(now);
+  if (hitHistory.length > 9) hitHistory.shift();
+  if (hitHistory.length >= 4) {
+    var ivls = [];
+    for (var h = 1; h < hitHistory.length; h++) ivls.push(hitHistory[h] - hitHistory[h-1]);
+    ivls.sort(function(a, b){ return a - b; });
+    var median = ivls[Math.floor(ivls.length / 2)];
+    /* debounce = 40% of estimated inter-hit interval, clamped to safe range */
+    DEBOUNCE = Math.max(DEBOUNCE_MIN, Math.min(DEBOUNCE_MAX, Math.round(median * 0.40)));
+  }
+}
+
+function registerHit() {
+  var now = Date.now();
+  if (now - lastHit < DEBOUNCE) return;
+  lastHit = now;
+  updateAdaptiveDebounce(now);
+  if (hasPending) confirmed++;
+  hasPending = true;
+  var tgt = parseInt(elTarget.value, 10) || 0;
+  if (tgt > 0 && confirmed + 1 >= tgt && !targetDone) { targetDone = true; bell(); }
+  doFlash(); display(); schedSilence();
+}
+
+/* ── Meter update ─────────────────────────────────────────── */
+function updateMeter(dynThresh) {
+  var scale = 0.4 / Math.max(dynThresh, ABS_FLOOR);
+  var pct   = Math.min(dispRMS   * scale * 100, 100);
+  var thPct = Math.min(dynThresh * scale * 100, 100);
+  elMeter.style.width   = pct + '%';
+  elMeterPc.textContent = Math.round(pct) + '%';
+  elThLine.style.left   = thPct + '%';
+}
+
+/* ── Detection loop ─────────────────────────────────────────── */
+function loop() {
+  if (state !== 'running') return;
+
+  /* Time-domain RMS — pre-allocated buffers, zero GC pressure */
+  analyser.getFloatTimeDomainData(bufTimeLo);
+  var sq = 0;
+  for (var i = 0; i < bufTimeLo.length; i++) sq += bufTimeLo[i] * bufTimeLo[i];
+  rawRMS = Math.sqrt(sq / bufTimeLo.length);
+
+  /* High band */
+  var rawHi = 0;
+  if (analyserHi && bufTimeHi) {
+    analyserHi.getFloatTimeDomainData(bufTimeHi);
+    sq = 0;
+    for (var j = 0; j < bufTimeHi.length; j++) sq += bufTimeHi[j] * bufTimeHi[j];
+    rawHi = Math.sqrt(sq / bufTimeHi.length);
+  }
+
+  dispRMS += DISP_A * (rawRMS - dispRMS);
+
+  /* Compute threshold first using previous-frame bgRMS (1-frame delay is acceptable).
+     This lets background tracking use the CURRENT 'above' flag, not the stale
+     aboveThresh — fixes bgSF inflation from rearm frames.                  */
+  var mult = parseFloat(elMultSl.value);
+  var dynThresh = Math.max(bgRMS * mult, ABS_FLOOR);
+  var above = rawRMS > dynThresh;
+
+  /* Background tracking — only when signal is genuinely below threshold.
+     BG_UP < BG_DOWN so the noise floor rises slowly (ignores transients)
+     but falls quickly toward the true quiet level (Böck 2013, PMC9783232). */
+  if (!above) {
+    bgRMS += (rawRMS > bgRMS ? BG_UP : BG_DOWN) * (rawRMS - bgRMS);
+    bgHi  += (rawHi  > bgHi  ? BG_UP : BG_DOWN) * (rawHi  - bgHi);
+  }
+
+  /* Gate 3: high-band presence window (for dual-mode profiles) */
+  if (analyserHi && rawHi > Math.max(bgHi * HI_MULT, ABS_FLOOR)) {
+    lastHighMs = Date.now();
+  }
+
+  /* Gate 2: frequency-weighted spectral flux — sums positive bin changes,
+     weighting higher bins more (rope snap concentrates in upper range).   */
+  var sf = 0;
+  if (freqBufLo) {
+    analyser.getFloatFrequencyData(freqBufLo);
+    if (prevFreqLo) {
+      var nBins = freqBufLo.length;
+      for (var k = 0; k < nBins; k++) {
+        var diff = Math.max(freqBufLo[k], FREQ_FLOOR) - Math.max(prevFreqLo[k], FREQ_FLOOR);
+        if (diff > 0) sf += diff * (1 + k / nBins);  /* linear freq weight */
+      }
+    }
+    if (!prevFreqLo) prevFreqLo = new Float32Array(freqBufLo.length);
+    prevFreqLo.set(freqBufLo);
+  }
+  /* bgSF tracks quiet-period flux only when signal is below threshold */
+  if (!above) bgSF += (sf > bgSF ? BG_UP : BG_DOWN) * (sf - bgSF);
+  if (sf > bgSF * SF_MULT) lastSlopeHighMs = Date.now();
+
+  /* Re-arm A: peak-decay — re-arm when signal drops to REARM_RATIO of its peak */
+  if (above) {
+    if (rawRMS > peakRmsHit) peakRmsHit = rawRMS;
+    if (aboveThresh && rawRMS < peakRmsHit * REARM_RATIO) {
+      aboveThresh = false;
+      peakRmsHit = rawRMS;
+    }
+  } else {
+    peakRmsHit = 0;
+  }
+
+  /* Re-arm B: time-forced — if stuck above threshold past expected IOI, force re-arm.
+     Handles sustained-signal edge cases at very high BPM.                  */
+  var nowMs = Date.now();
+  if (aboveThresh && (nowMs - lastHit) > Math.max(DEBOUNCE * 1.6, 120)) {
+    aboveThresh = false;
+    peakRmsHit = rawRMS;
+  }
+
+  /* Gate 1 + fire */
+  if (above && !aboveThresh) {
+    var slopeRecent = (nowMs - lastSlopeHighMs) < 300;  /* 300ms window */
+    var highOk = !activeProfile.dual || ((nowMs - lastHighMs) < HIGH_WIN);
+    if (slopeRecent && highOk) registerHit();
+  }
+  aboveThresh = above;
+  updateMeter(dynThresh);
+  rafId = requestAnimationFrame(loop);
+}
+
+/* ── Filter setup ───────────────────────────────────────────── */
+function applyFilters() {
+  if (!hpf || !lpf) return;
+  hpf.frequency.value = activeProfile.low;
+  lpf.frequency.value = activeProfile.high;
+  /* High chain: only connected when profile has hiHigh > 0 */
+  if (hpfHi && lpfHi) {
+    hpfHi.frequency.value = activeProfile.hiLow  || 700;
+    lpfHi.frequency.value = activeProfile.hiHigh || 4000;
+  }
+}
+
+function buildGraph(stream) {
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  var src = audioCtx.createMediaStreamSource(stream);
+
+  /* Low-band chain */
+  hpf = audioCtx.createBiquadFilter(); hpf.type = 'highpass'; hpf.Q.value = 0.9;
+  lpf = audioCtx.createBiquadFilter(); lpf.type = 'lowpass';  lpf.Q.value = 0.9;
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 512;  /* 11.6ms buffer — optimal for sub-10ms rope-slap transients */
+  analyser.smoothingTimeConstant = 0;  /* no browser EMA on FFT data */
+  src.connect(hpf); hpf.connect(lpf); lpf.connect(analyser);
+  freqBufLo  = new Float32Array(analyser.frequencyBinCount);
+  bufTimeLo  = new Float32Array(analyser.fftSize);
+
+  /* High-band chain (always built; used only when profile.dual = true) */
+  hpfHi = audioCtx.createBiquadFilter(); hpfHi.type = 'highpass'; hpfHi.Q.value = 0.9;
+  lpfHi = audioCtx.createBiquadFilter(); lpfHi.type = 'lowpass';  lpfHi.Q.value = 0.9;
+  analyserHi = audioCtx.createAnalyser();
+  analyserHi.fftSize = 512;
+  analyserHi.smoothingTimeConstant = 0;
+  bufTimeHi  = new Float32Array(analyserHi.fftSize);
+  src.connect(hpfHi); hpfHi.connect(lpfHi); lpfHi.connect(analyserHi);
+
+  applyFilters();
+}
+
+/* ── Mic acquisition ────────────────────────────────────────── */
+function startMic(cb) {
+  var c1 = { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } };
+  navigator.mediaDevices.getUserMedia(c1)
+    .then(function(s){ buildGraph(s); cb(null); })
+    .catch(function(){
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(function(s){ buildGraph(s); cb(null); })
+        .catch(function(e){ cb(e); });
+    });
+}
+
+/* ── Start handler ──────────────────────────────────────────── */
+function handleStart() {
+  hideToast();
+  if (state === 'idle' || state === 'done') {
+    confirmed = 0; hasPending = false; aboveThresh = false;
+    dispRMS = 0; rawRMS = 0; bgRMS = 0.02; bgHi = 0.02; bgSF = 0.001; peakRMS = 0;
+    prevFreqLo = null; lastHighMs = 0; lastSlopeHighMs = 0;
+    peakRmsHit = 0; hitHistory = []; DEBOUNCE = 100;
+    lastHit = 0; targetDone = false;
+    clearTimeout(pendingTimer); display();
+  }
+  if (audioCtx) {
+    lastSlopeHighMs = Date.now();  /* pre-warm SF gate so first hit isn't blocked */
+    state = 'running'; setStatus('running'); syncBtns();
+    rafId = requestAnimationFrame(loop); return;
+  }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showToast('此瀏覽器不支援麥克風 API<br>請改用 Chrome 或 Safari（https://）');
+    return;
+  }
+  if (location.protocol === 'file:') {
+    showToast(
+      '從 <code>file://</code> 開啟，Chrome 封鎖麥克風<br>' +
+      '<code>python3 -m http.server 8000</code><br>' +
+      '然後開 <code>http://localhost:8000</code>'
+    );
+    return;
+  }
+  btnGo.disabled = true;
+  btnGo.textContent = '請求中…';
+  showCentre('請求<br>麥克風…', 'hi');
+  startMic(function(err) {
+    hideCentre();
+    if (err) {
+      btnGo.disabled = false; syncBtns();
+      var n = err.name || '';
+      showToast(
+        n === 'NotAllowedError' || n === 'PermissionDeniedError'
+          ? '🚫 麥克風被拒絕<br>請點 🔒 圖示 → 允許麥克風 → 重新整理'
+          : n === 'NotFoundError'
+            ? '🔇 找不到麥克風裝置'
+            : '⚠️ 麥克風錯誤：' + (err.message || n)
+      );
+      return;
+    }
+    lastSlopeHighMs = Date.now();  /* pre-warm SF gate */
+    state = 'running'; setStatus('running'); syncBtns();
+    rafId = requestAnimationFrame(loop);
+  });
+}
+
+/* ── Button events ────────────────────────────────────────── */
+btnGo.addEventListener('click', handleStart);
+
+btnHold.addEventListener('click', function() {
+  if (state !== 'running') return;
+  cancelAnimationFrame(rafId); clearPending();
+  prevFreqLo = null; hitHistory = []; peakRmsHit = 0;
+  state = 'paused'; display(); setStatus('paused'); syncBtns();
+  elMeter.style.width = '0%'; elMeterPc.textContent = '–';
+});
+
+btnEnd.addEventListener('click', function() {
+  if (state === 'idle') return;
+  cancelAnimationFrame(rafId); clearPending();
+  state = 'done'; aboveThresh = false; dispRMS = 0; rawRMS = 0;
+  prevFreqLo = null; hitHistory = []; peakRmsHit = 0; DEBOUNCE = 100;
+  display(); setStatus('done'); syncBtns();
+  elMeter.style.width = '0%'; elMeterPc.textContent = '–';
+});
+
+elMultSl.addEventListener('input', function() {
+  elMultVal.textContent = parseFloat(elMultSl.value).toFixed(1) + '×';
+});
+elTarget.addEventListener('input', function() { targetDone = false; display(); });
+
+/* ── Init ────────────────────────────────────────────────── */
+setStatus('idle'); syncBtns(); display();
+setTimeout(function(){ _ringPx = 0; fitCount(0); }, 50);
+
+if (location.protocol === 'file:') {
+  showToast(
+    '⚠️ 從 <code>file://</code> 開啟，Chrome 封鎖麥克風<br>' +
+    '請用：<code>python3 -m http.server 8000</code><br>' +
+    '再以 <code>http://localhost:8000</code> 開啟'
+  );
+}
+</script>
+</body>
+</html>
